@@ -106,6 +106,30 @@ a{color:inherit;text-decoration:none;}
 .hero-dots{position:absolute;bottom:10px;right:14px;display:flex;gap:5px;}
 .hero-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);transition:all .25s;}
 .hero-dots span.active{width:16px;background:var(--accent);}
+.promo-ticker{
+  margin:0 16px 12px;
+  background:linear-gradient(90deg, var(--primary), var(--primary-dark));
+  border-radius:14px;
+  overflow:hidden;
+  height:34px;
+  display:flex;
+  align-items:center;
+}
+.promo-ticker .track{
+  display:flex;
+  align-items:center;
+  white-space:nowrap;
+  animation:tickerScroll 20s linear infinite;
+}
+.promo-ticker:hover .track{ animation-play-state:paused; }
+.promo-ticker .item{
+  color:#fff;font-size:12px;font-weight:600;padding:0 16px;display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.promo-ticker .item .dot{color:var(--accent);}
+@keyframes tickerScroll{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(-50%);}
+}
 
 /* ---------- CATEGORIES ---------- */
 .section-title{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;}
@@ -283,7 +307,9 @@ a{color:inherit;text-decoration:none;}
   .admin-side{position:fixed;left:0;top:0;z-index:150;transform:translateX(-100%);transition:transform .3s;box-shadow:var(--shadow-pop);}
   .admin-side.show{transform:translateX(0);}
   .admin-main{padding:16px;}
+  #adminMenuBtn{display:flex;}
 }
+#adminMenuBtn{display:none;}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-soft);}
 .kpi-card .lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
@@ -331,6 +357,10 @@ table tr:hover td{background:var(--primary-light);}
       <div class="hero-track" id="heroTrack"></div>
       <div class="hero-dots" id="heroDots"></div>
     </div>
+  </div>
+
+  <div class="promo-ticker hide" id="promoTicker">
+    <div class="track" id="promoTickerTrack"></div>
   </div>
 
   <div class="section-title"><h3>ໝວດໝູ່ສິນຄ້າ</h3></div>
@@ -477,7 +507,7 @@ table tr:hover td{background:var(--primary-light);}
   <div class="admin-main">
     <div class="admin-topbar">
       <div style="display:flex;align-items:center;gap:10px;">
-        <button class="icon-btn" style="display:none;" id="adminMenuBtn" onclick="document.getElementById('adminSide').classList.toggle('show')">☰</button>
+        <button class="icon-btn" id="adminMenuBtn" onclick="document.getElementById('adminSide').classList.toggle('show')">☰</button>
         <h2 id="adminPageTitle">Dashboard</h2>
       </div>
       <div style="font-size:13px;color:var(--text-muted);">👤 <span id="adminUserLabel"></span></div>
@@ -575,10 +605,29 @@ function saveCart(){ localStorage.setItem('lao_cart', JSON.stringify(STATE.cart)
 window.addEventListener('load', init);
 function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
+  if(STATE.adminToken){
+    // ມີ token ເກົ່າ -> ກວດກ່ອນ ຖ້າຍັງໃຊ້ໄດ້ ໃຫ້ເຂົ້າ Admin ໂດຍກົງ ບໍ່ຕ້ອງໂຊວ໌ໜ້າຮ້ານ
+    adminCall('adminGetSettings').then(()=>{
+      gsRun('getInitData').then(d=>{ DATA=d; }).catch(()=>{});
+      document.getElementById('loader').classList.add('hide');
+      enterAdmin();
+    }).catch(()=>{
+      STATE.adminToken=null;
+      localStorage.removeItem('lao_admin_token');
+      localStorage.removeItem('lao_admin_role');
+      localStorage.removeItem('lao_admin_name');
+      loadStorefront();
+    });
+  } else {
+    loadStorefront();
+  }
+}
+function loadStorefront(){
   gsRun('getInitData').then(data=>{
     DATA = data;
     applySettingsToUI();
     renderHero();
+    renderPromoTicker();
     renderCategories();
     renderProducts();
     renderShippingOptions();
@@ -622,6 +671,17 @@ function renderHero(){
       [...dots.children].forEach((d,i)=>d.classList.toggle('active', i===STATE.heroIndex));
     }, 4000);
   }
+}
+
+function renderPromoTicker(){
+  const raw = (DATA.settings.promoTicker || '').trim();
+  const wrap = document.getElementById('promoTicker');
+  if(!raw){ wrap.classList.add('hide'); return; }
+  const items = raw.split('|').map(s=>s.trim()).filter(Boolean);
+  if(!items.length){ wrap.classList.add('hide'); return; }
+  const html = items.map(t=>`<span class="item"><span class="dot">✦</span>${t}</span>`).join('');
+  document.getElementById('promoTickerTrack').innerHTML = html + html; // ຊ້ຳ 2 ຮອບ ເພື່ອໃຫ້ວົນລື່ນໆບໍ່ສະດຸດ
+  wrap.classList.remove('hide');
 }
 
 /* ============================================================
@@ -983,6 +1043,7 @@ function renderAdminNav(){
 }
 function openAdminTab(tab){
   STATE.adminTab = tab;
+  document.getElementById('adminSide').classList.remove('show'); // ← ເພີ່ມແຖວນີ້
   renderAdminNav();
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
@@ -1437,7 +1498,7 @@ function deleteUser(username){
 function renderAdminSettings(){
   adminCall('adminGetSettings').then(s=>{
     const fields = [
-      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
+      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນແຕ່ລະລາຍການດ້ວຍ | )'],
       ['primaryColor','ສີຫຼັກ (Primary)'], ['secondaryColor','ສີຮອງ (Accent)'], ['bgColor','ສີພື້ນຫຼັງ'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
@@ -1463,15 +1524,6 @@ function saveAllSettings(){
     toast('ບັນທຶກການຕັ້ງຄ່າສຳເລັດ! ກຳລັງໂຫຼດຄືນໃໝ່...');
     gsRun('getInitData').then(d=>{ DATA=d; applySettingsToUI(); });
   });
-}
-
-/* ============================================================
-   RESTORE ADMIN SESSION ON RELOAD (if token still valid)
-   ============================================================ */
-if(STATE.adminToken){
-  setTimeout(()=>{
-    adminCall('adminGetSettings').then(()=>{ enterAdmin(); }).catch(()=>{ /* expired, stay on storefront */ });
-  }, 600);
 }
 </script>
 </body>
