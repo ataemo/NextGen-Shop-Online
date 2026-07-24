@@ -490,8 +490,7 @@ table tr:hover td{background:var(--primary-light);}
 <div class="modal-center-wrap hide" id="adminLoginModal">
   <div class="modal-center">
     <h3 style="font-family:var(--font-display);color:var(--primary);text-align:center;">🔐 ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ</h3>
-    <div class="field"><label>ຊື່ຜູ້ໃຊ້</label><input id="loginUser" placeholder="admin"></div>
-    <div class="field"><label>ລະຫັດຜ່ານ</label><input id="loginPass" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>ລະຫັດຜ່ານ</label><input id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
     <div id="loginError" style="color:var(--danger);font-size:12px;margin-bottom:8px;"></div>
     <button class="btn btn-primary btn-block" onclick="doAdminLogin()">ເຂົ້າສູ່ລະບົບ</button>
     <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeAdminLogin()">ຍົກເລີກ</button>
@@ -995,14 +994,16 @@ function openAdminLogin(){
 }
 function closeAdminLogin(){ document.getElementById('adminLoginModal').classList.add('hide'); }
 function doAdminLogin(){
-  const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
-  gsRun('adminLogin', u, p).then(res=>{
+  if(!p){ document.getElementById('loginError').textContent = 'ກະລຸນາໃສ່ລະຫັດຜ່ານ'; return; }
+  gsRun('adminLoginByPassword', p).then(res=>{
     if(!res.success){ document.getElementById('loginError').textContent = res.message; return; }
     STATE.adminToken = res.token; STATE.adminRole = res.role; STATE.adminUser = res.fullName;
     localStorage.setItem('lao_admin_token', res.token);
     localStorage.setItem('lao_admin_role', res.role);
     localStorage.setItem('lao_admin_name', res.fullName);
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').textContent = '';
     closeAdminLogin();
     enterAdmin();
   });
