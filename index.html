@@ -1084,20 +1084,36 @@ function applyCoupon(){
 /* ============================================================
    CHECKOUT
    ============================================================ */
-const SHIP_ICONS = ['✈️','🚛','🚚','📦','🚢'];
+const LAO_DAYS = ['ອາທິດ','ຈັນ','ອັງຄານ','ພຸດ','ພະຫັດ','ສຸກ','ເສົາ']; // ກົງກັບ getDay() 0-6
+
+function isShippingClosedToday(s){
+  if(!s.DaysOff) return false;
+  const today = LAO_DAYS[new Date().getDay()];
+  return String(s.DaysOff).split(',').map(d=>d.trim()).includes(today);
+}
+
 function renderShipMethods(){
   const grid = document.getElementById('shipMethodGrid');
   if(!grid || !DATA.shipping) return;
   if(!DATA.shipping.length){ grid.innerHTML=''; return; }
-  if(!STATE.checkoutShipping || !DATA.shipping.find(s=>s.Name===STATE.checkoutShipping)){
-    STATE.checkoutShipping = DATA.shipping[0].Name;
+
+  // ຖ້າຕົວທີ່ເລືອກຢູ່ປິດມື້ນີ້ ຫຼື ຍັງບໍ່ໄດ້ເລືອກ → ຫາຕົວທຳອິດທີ່ຍັງເປີດ
+  const openOnes = DATA.shipping.filter(s=>!isShippingClosedToday(s));
+  if(!STATE.checkoutShipping || !DATA.shipping.find(s=>s.Name===STATE.checkoutShipping) || isShippingClosedToday(DATA.shipping.find(s=>s.Name===STATE.checkoutShipping))){
+    STATE.checkoutShipping = (openOnes[0] || DATA.shipping[0]).Name;
   }
-  grid.innerHTML = DATA.shipping.map((s,i)=>`
-    <button type="button" class="ship-method-btn ${STATE.checkoutShipping===s.Name?'active':''}" onclick="selectShipMethod('${String(s.Name).replace(/'/g,"\\'")}')">
-      <span class="ic">${SHIP_ICONS[i%SHIP_ICONS.length]}</span>
+
+  grid.innerHTML = DATA.shipping.map(s=>{
+    const closed = isShippingClosedToday(s);
+    return `
+    <button type="button" class="ship-method-btn ${STATE.checkoutShipping===s.Name?'active':''}" ${closed?'disabled style="opacity:.45;pointer-events:none;"':''} onclick="selectShipMethod('${String(s.Name).replace(/'/g,"\\'")}')">
+      <span class="ic">${s.Icon||'🚚'}</span>
       <span>${s.Name}</span>
       <span style="font-weight:500;color:var(--text-muted);">${fmt(s.Fee)} ₭</span>
-    </button>`).join('');
+      ${s.WorkHours?`<span style="font-size:10px;color:var(--text-muted);">${s.WorkHours}</span>`:''}
+      ${closed?`<span style="font-size:10px;color:var(--danger);font-weight:700;">ປິດມື້ນີ້</span>`:''}
+    </button>`;
+  }).join('');
   renderCheckoutSummary();
 }
 function selectShipMethod(name){
@@ -1897,9 +1913,10 @@ function renderAdminShipping(){
           <button class="btn btn-primary btn-sm" onclick="openShippingForm()">+ ເພີ່ມບໍລິສັດ</button>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ຊື່</th><th>ຄ່າຂົນສົ່ງ</th><th>ສະຖານະ</th><th></th></tr></thead>
+          <thead><tr><th>ໄອຄອນ</th><th>ຊື່</th><th>ຄ່າຂົນສົ່ງ</th><th>ໂມງເຮັດວຽກ</th><th>ມື້ຢຸດ</th><th>ສະຖານະ</th><th></th></tr></thead>
           <tbody>${ships.map(s=>`
-            <tr><td>${s.Name}</td><td>${fmt(s.Fee)} ₭</td>
+            <tr><td style="font-size:20px;">${s.Icon||'🚚'}</td><td>${s.Name}</td><td>${fmt(s.Fee)} ₭</td>
+            <td>${s.WorkHours||'-'}</td><td>${s.DaysOff||'-'}</td>
             <td><span class="chip ${s.Status==='Inactive'?'chip-cancelled':'chip-completed'}">${s.Status||'Active'}</span></td>
             <td><button class="mini-btn" onclick='openShippingForm(${JSON.stringify(s).replace(/'/g,"&apos;")})'>✏️</button></td></tr>`).join('')}
           </tbody></table></div>
@@ -1911,7 +1928,10 @@ function openShippingForm(existing){
     saveFn:'adminSaveShipping', onDone:renderAdminShipping,
     fields:[
       {key:'Name', label:'ຊື່ບໍລິສັດຂົນສົ່ງ', readonly: !!existing},
+      {key:'Icon', label:'ໄອຄອນ (Emoji ເຊັ່ນ 🚚)'},
       {key:'Fee', label:'ຄ່າຂົນສົ່ງ', type:'number'},
+      {key:'WorkHours', label:'ໂມງເຮັດວຽກ (ຕົວຢ່າງ: 08:00-18:00)'},
+      {key:'DaysOff', label:'ມື້ຢຸດ (ຄັ່ນດ້ວຍ , ເຊັ່ນ ເສົາ,ອາທິດ)'},
       {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Inactive']}
     ]
   }, existing);
