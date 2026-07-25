@@ -999,8 +999,8 @@ function changeDetailQty(d){
 }
 function quickAdd(id){
   const p = DATA.products.find(x=>x.ID===id);
-  addItemToCart(p, 1, '', '');
-  toast('ເພີ່ມ ' + p.Name + ' ໃສ່ກະຕ່າແລ້ວ');
+  const totalQty = addItemToCart(p, 1, '', '');
+  toast('ເພີ່ມ ' + p.Name + ' ແລ້ວ (ຕອນນີ້ ' + totalQty + ' ອັນ ໃນກະຕ່າ)');
 }
 function addToCart(buyNow){
   addItemToCart(currentProduct, detailState.qty, detailState.color, detailState.size);
@@ -1013,6 +1013,8 @@ function addItemToCart(p, qty, color, size){
   if(existing) existing.qty += qty;
   else STATE.cart.push({key, productId:p.ID, name:p.Name, image:p.ImageURL, price:Number(p.Price), color, size, qty});
   saveCart();
+  const item = STATE.cart.find(i=>i.key===key);
+  return item ? item.qty : qty;
 }
 function updateCartBadge(){
   const count = STATE.cart.reduce((s,i)=>s+i.qty,0);
