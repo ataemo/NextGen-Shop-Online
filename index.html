@@ -768,7 +768,7 @@ function loadStorefront(){
     renderPromoTicker();
     renderCategories();
     renderProducts();
-    renderShippingOptions();
+    renderShipMethods();
     updateCartBadge();
     document.getElementById('loader').classList.add('hide');
     document.getElementById('storefront').classList.remove('hide');
@@ -786,7 +786,7 @@ function silentRefreshData(){
     renderPromoTicker();
     renderCategories();
     renderProducts();
-    renderShippingOptions();
+    renderShipMethods();
     updateCartBadge();
   }).catch(()=>{ /* ຖ້າຜິດພາດຊົ່ວຄາວ ບໍ່ຕ້ອງລົບກວນຜູ້ໃຊ້ */ });
 }
@@ -1025,7 +1025,7 @@ function updateCartBadge(){
 /* ============================================================
    CART
    ============================================================ */
-function openCart(){ renderCart(); renderShippingOptions(); renderPaymentInfo(); openSheet('cartSheet'); }
+function openCart(){ renderCart(); renderShipMethods(); renderPaymentInfo(); openSheet('cartSheet'); }
 function renderCart(){
   const list = document.getElementById('cartList');
   document.getElementById('cartCount').textContent = STATE.cart.reduce((s,i)=>s+i.qty,0);
@@ -1290,7 +1290,7 @@ function backToStore(){
     renderPromoTicker();
     renderCategories();
     renderProducts();
-    renderShippingOptions();
+    renderShipMethods();
     updateCartBadge();
   }).catch(()=>{ /* ຖ້າໂຫຼດຄືນບໍ່ໄດ້ ໃຫ້ໃຊ້ຂໍ້ມູນ Storefront ທີ່ Render ໄວ້ແລ້ວກ່ອນໜ້ານີ້ */ });
 }
