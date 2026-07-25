@@ -83,6 +83,14 @@ a{color:inherit;text-decoration:none;}
   #topCartBtn{display:none;}
 }
 .topbar .spacer{flex:1;}
+.desktop-nav{display:none;align-items:center;gap:4px;margin-left:10px;}
+@media(min-width:900px){ .desktop-nav{display:flex;} }
+.desktop-nav .dn-item{
+  padding:9px 16px;border-radius:12px;font-size:13px;font-weight:700;color:var(--text-muted);
+  display:flex;align-items:center;gap:6px;transition:background .2s,color .2s;white-space:nowrap;
+}
+.desktop-nav .dn-item:hover{background:var(--primary-light);color:var(--primary);}
+.desktop-nav .dn-item.active{background:var(--primary);color:#fff;}
 .icon-btn{
   width:40px;height:40px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
@@ -372,6 +380,11 @@ table tr:hover td{background:var(--primary-light);}
 
   <div class="topbar">
     <div class="brand"><img id="hLogo" src="" class="hide"><span id="hName">LAO SHOP</span></div>
+    <div class="desktop-nav" id="desktopNav">
+      <button class="dn-item active" onclick="switchTab('home')">🏠 ໜ້າຫຼັກ</button>
+      <button class="dn-item" onclick="openCategoryPage('all')">🗂️ ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
+    </div>
     <div class="spacer"></div>
     <button class="icon-btn" onclick="openSearch()">🔍</button>
     <button class="icon-btn" id="topCartBtn" onclick="openCart()">🛒<span id="cartBadge" class="badge hide">0</span></button>
@@ -427,6 +440,11 @@ table tr:hover td{background:var(--primary-light);}
 <div id="categoryPage" class="app hide">
   <div class="topbar">
     <div class="brand" style="font-size:16px;" id="catPageTitle">ສິນຄ້າທັງໝົດ</div>
+    <div class="desktop-nav">
+      <button class="dn-item" onclick="closeCategoryPage()">🏠 ໜ້າຫຼັກ</button>
+      <button class="dn-item active">🗂️ ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
+    </div>
     <div class="spacer"></div>
     <button class="icon-btn" onclick="openCart()">🛒<span id="cartBadge2" class="badge hide">0</span></button>
   </div>
