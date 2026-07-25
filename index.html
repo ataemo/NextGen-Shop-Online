@@ -174,6 +174,7 @@ a{color:inherit;text-decoration:none;}
 .card .price-row{display:flex;align-items:baseline;gap:6px;margin-top:2px;}
 .card .price{font-family:var(--font-display);font-weight:700;color:var(--primary);font-size:15px;}
 .card .old-price{font-size:11px;color:var(--text-muted);text-decoration:line-through;}
+.old-price{font-size:14px;color:var(--text-muted);text-decoration:line-through;font-weight:500;}
 .card .meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:2px;}
 .card .add-btn{
   position:absolute;bottom:10px;right:10px;width:32px;height:32px;border-radius:50%;
@@ -835,7 +836,7 @@ function openProduct(id){
     </div>`:'<div style="margin-bottom:14px;"></div>'}
     <h2 style="margin:0 0 4px;font-size:18px;">${p.Name}</h2>
     <div style="color:var(--text-muted);font-size:13px;margin-bottom:8px;">${p.ShortDesc||''}</div>
-    <div class="price-row" style="margin-bottom:10px;"><span class="price" style="font-size:22px;">${fmt(p.Price)} ₭</span>${p.OldPrice?`<span class="old-price">${fmt(p.OldPrice)}</span>`:''}</div>
+    <div class="price-row" style="margin-bottom:10px;"><span class="price" style="font-size:22px;">${fmt(p.Price)} ₭</span>${p.OldPrice?`<span class="old-price" style="margin-left:8px;">${fmt(p.OldPrice)}</span>`:''}</div>
     ${colors.length?`<div class="field"><label>ສີ</label><div class="tag-input-row" id="colorOpts">${colors.map((c,i)=>`<button class="btn btn-outline btn-sm opt-btn" data-type="color" data-val="${c}" onclick="selectOpt(this)">${c}</button>`).join('')}</div></div>`:''}
     ${sizes.length?`<div class="field"><label>ຂະໜາດ</label><div class="tag-input-row" id="sizeOpts">${sizes.map((s,i)=>`<button class="btn btn-outline btn-sm opt-btn" data-type="size" data-val="${s}" onclick="selectOpt(this)">${s}</button>`).join('')}</div></div>`:''}
     <div class="field"><label>ຈຳນວນ</label>
