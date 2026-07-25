@@ -380,8 +380,17 @@ table tr:hover td{background:var(--primary-light);}
   <div class="search-bar hide" id="searchBar">
     <input id="searchInput" placeholder="ຄົ້ນຫາສິນຄ້າ..." oninput="renderProducts()">
   </div>
+  <div class="hide" id="sortBar" style="margin:0 16px 12px;">
+    <select id="sortSelect" onchange="renderProducts()" style="width:100%;padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;">
+      <option value="default">ຄັດຕົງໂດຍ: ແນະນຳ</option>
+      <option value="priceAsc">ລາຄາ: ຕ່ຳ → ສູງ</option>
+      <option value="priceDesc">ລາຄາ: ສູງ → ຕ່ຳ</option>
+      <option value="bestseller">ຂາຍດີສຸດ</option>
+      <option value="newest">ໃໝ່ສຸດ</option>
+    </select>
+  </div>
 
-  <div class="hero-wrap">
+  <div class="hero-wrap" id="heroWrap">
     <div class="hero-slider" id="heroSlider">
       <div class="hero-track" id="heroTrack">
         <div class="hero-slide" style="display:flex;align-items:center;justify-content:center;">
@@ -795,6 +804,12 @@ function renderProducts(){
     const matchSearch = !search || (p.Name||'').toLowerCase().includes(search);
     return matchCat && matchSearch;
   });
+  const sortSel = document.getElementById('sortSelect');
+  const sortVal = sortSel ? sortSel.value : 'default';
+  if(sortVal==='priceAsc') list.sort((a,b)=>Number(a.Price)-Number(b.Price));
+  else if(sortVal==='priceDesc') list.sort((a,b)=>Number(b.Price)-Number(a.Price));
+  else if(sortVal==='bestseller') list.sort((a,b)=>Number(b.Sold||0)-Number(a.Sold||0));
+  else if(sortVal==='newest') list.sort((a,b)=>new Date(b.CreatedAt)-new Date(a.CreatedAt));
   document.getElementById('prodTitle').textContent = STATE.activeCategory==='all' ? 'ສິນຄ້າແນະນຳ' : 'ຜົນການຄົ້ນຫາ';
   const grid = document.getElementById('productGrid');
   if(!list.length){ grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">📭</div>ບໍ່ພົບສິນຄ້າ</div>`; return; }
@@ -1051,8 +1066,21 @@ function switchTab(tab){
     const pill = document.getElementById('navPill');
     pill.style.left = active.offsetLeft+'px'; pill.style.width = active.offsetWidth+'px';
   }
-  if(tab==='category'){ document.getElementById('searchBar').classList.remove('hide'); window.scrollTo({top:280,behavior:'smooth'}); }
-  else document.getElementById('searchBar').classList.add('hide');
+  if(tab==='category'){
+    document.getElementById('searchBar').classList.remove('hide');
+    document.getElementById('sortBar').classList.remove('hide');
+    document.getElementById('heroWrap').classList.add('hide');
+    document.getElementById('promoTicker').classList.add('hide');
+    STATE.activeCategory = 'all';
+    renderCategories();
+    renderProducts();
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else {
+    document.getElementById('searchBar').classList.add('hide');
+    document.getElementById('sortBar').classList.add('hide');
+    document.getElementById('heroWrap').classList.remove('hide');
+    if(DATA.settings.promoTicker) document.getElementById('promoTicker').classList.remove('hide');
+  }
 }
 setTimeout(()=>switchTab('home'), 300);
 function openSearch(){ document.getElementById('searchBar').classList.toggle('hide'); document.getElementById('searchInput').focus(); }
