@@ -598,6 +598,10 @@ async function gsRun(fnName, ...args){
    STATE
    ============================================================ */
 let DATA = { products:[], categories:[], banners:[], settings:{}, shipping:[] };
+try {
+  const cachedData = localStorage.getItem('lao_data_cache');
+  if(cachedData) DATA = JSON.parse(cachedData);
+} catch(e){}
 let STATE = {
   cart: JSON.parse(localStorage.getItem('lao_cart')||'[]'),
   theme: localStorage.getItem('lao_theme')||'light',
@@ -632,6 +636,17 @@ function init(){
   document.getElementById('loader').classList.add('hide');
   document.getElementById('storefront').classList.remove('hide');
 
+  // ຖ້າມີຂໍ້ມູນ Cache ຈາກການເຂົ້າຊົມຄັ້ງກ່ອນ ໃຫ້ສະແດງທັນທີ ໂດຍບໍ່ຕ້ອງລໍ Server
+  if(DATA.products && DATA.products.length){
+    applySettingsToUI();
+    renderHero();
+    renderPromoTicker();
+    renderCategories();
+    renderProducts();
+    renderShippingOptions();
+    updateCartBadge();
+  }
+
   // ແກ້ໄຂ: ບໍ່ວ່າຈະເຄີຍ Login Admin ໄວ້ ຫຼື ບໍ່ກໍ່ຕາມ, ທຸກຄັ້ງທີ່ເປີດ/ຣີເຟຣັດລະບົບ
   // ໃຫ້ໂຫຼດ ແລະ ສະແດງໜ້າຮ້ານ (Storefront) ເປັນຄ່າເລີ່ມຕົ້ນສະເໝີ. ນອກຈາກຈະແກ້ບັນຫາ
   // "ຣີເຟຣັດແລ້ວຕິດຄ້າງຢູ່ໜ້າ Admin" ແລ້ວ, ຍັງແກ້ບັນຫາ "ກັບໄປໜ້າຮ້ານແລ້ວຂໍ້ມູນຫາຍ"
@@ -661,6 +676,7 @@ function init(){
 function loadStorefront(){
   gsRun('getInitData').then(data=>{
     DATA = data;
+    try{ localStorage.setItem('lao_data_cache', JSON.stringify(data)); }catch(e){}
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
@@ -678,6 +694,7 @@ function loadStorefront(){
 function silentRefreshData(){
   gsRun('getInitData').then(data=>{
     DATA = data;
+    try{ localStorage.setItem('lao_data_cache', JSON.stringify(data)); }catch(e){}
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
