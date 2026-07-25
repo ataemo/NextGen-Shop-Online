@@ -426,7 +426,6 @@ table tr:hover td{background:var(--primary-light);}
      ============================================================ -->
 <div id="categoryPage" class="app hide">
   <div class="topbar">
-    <button class="icon-btn" onclick="closeCategoryPage()">←</button>
     <div class="brand" style="font-size:16px;" id="catPageTitle">ສິນຄ້າທັງໝົດ</div>
     <div class="spacer"></div>
     <button class="icon-btn" onclick="openCart()">🛒<span id="cartBadge2" class="badge hide">0</span></button>
@@ -436,6 +435,14 @@ table tr:hover td{background:var(--primary-light);}
   </div>
   <div class="cat-scroll" id="catPageScroll"></div>
   <div class="grid" id="catPageGrid"></div>
+
+  <div class="bottom-nav" id="bottomNavCat">
+    <div class="nav-pill" id="navPillCat"></div>
+    <button class="nav-item" onclick="closeCategoryPage()"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
+    <button class="nav-item active"><span class="ic">🗂️</span>ໝວດໝູ່</button>
+    <button class="nav-item" onclick="openCart()"><span class="ic">🛒</span>ກະຕ່າ</button>
+    <button class="nav-item" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
+  </div>
 </div>
 
 <!-- Side menu (3-dot) -->
@@ -813,6 +820,12 @@ function openCategoryPage(id){
   renderCategoryPageCats();
   renderCategoryPageProducts();
   window.scrollTo(0,0);
+  setTimeout(positionCatNavPill, 50);
+}
+function positionCatNavPill(){
+  const active = document.querySelector('#bottomNavCat .nav-item.active');
+  const pill = document.getElementById('navPillCat');
+  if(active && pill){ pill.style.left = active.offsetLeft+'px'; pill.style.width = active.offsetWidth+'px'; }
 }
 function closeCategoryPage(){
   document.getElementById('categoryPage').classList.add('hide');
