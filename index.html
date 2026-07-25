@@ -609,21 +609,31 @@ function saveCart(){ localStorage.setItem('lao_cart', JSON.stringify(STATE.cart)
 window.addEventListener('load', init);
 function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
+
+  // ແກ້ໄຂ: ບໍ່ວ່າຈະເຄີຍ Login Admin ໄວ້ ຫຼື ບໍ່ກໍ່ຕາມ, ທຸກຄັ້ງທີ່ເປີດ/ຣີເຟຣັດລະບົບ
+  // ໃຫ້ໂຫຼດ ແລະ ສະແດງໜ້າຮ້ານ (Storefront) ເປັນຄ່າເລີ່ມຕົ້ນສະເໝີ. ນອກຈາກຈະແກ້ບັນຫາ
+  // "ຣີເຟຣັດແລ້ວຕິດຄ້າງຢູ່ໜ້າ Admin" ແລ້ວ, ຍັງແກ້ບັນຫາ "ກັບໄປໜ້າຮ້ານແລ້ວຂໍ້ມູນຫາຍ"
+  // ນຳ ເພາະ Storefront ຈະຖືກ Render ຄົບທຸກອົງປະກອບ (Hero, Categories, Products, ...)
+  // ໄວ້ລ່ວງໜ້າສະເໝີ ບໍ່ວ່າຈະຢູ່ໃນ Admin ຫຼືບໍ່.
+  loadStorefront();
+
+  // ຖ້າມີ Token Admin ເກົ່າຢູ່ໃນເຄື່ອງ ໃຫ້ກວດສອບຄວາມຖືກຕ້ອງແບບບໍ່ລົບກວນໜ້າຈໍ (ດ້ານຫຼັງ)
+  // ຖ້າ Session ໝົດອາຍຸ/ບໍ່ຖືກຕ້ອງ ໃຫ້ລຶບ Token ອອກ ເພື່ອບັງຄັບໃຫ້ Login ໃໝ່ໃນຄັ້ງຕໍ່ໄປ.
+  // ຖ້າຍັງໃຊ້ໄດ້ຢູ່ ຈະບໍ່ພາໄປໜ້າ Admin ໂດຍອັດຕະໂນມັດ — ຕ້ອງກົດ "Admin Panel" ເອງ
+  // (ຄັ້ງນີ້ຈະເຂົ້າ Admin ໄດ້ທັນທີ ບໍ່ຕ້ອງໃສ່ລະຫັດຜ່ານຄືນ ເພາະ Token ຍັງບໍ່ໝົດອາຍຸ).
   if(STATE.adminToken){
-    // ມີ token ເກົ່າ -> ກວດກ່ອນ ຖ້າຍັງໃຊ້ໄດ້ ໃຫ້ເຂົ້າ Admin ໂດຍກົງ ບໍ່ຕ້ອງໂຊວ໌ໜ້າຮ້ານ
-    adminCall('adminGetSettings').then(()=>{
-      gsRun('getInitData').then(d=>{ DATA=d; }).catch(()=>{});
-      document.getElementById('loader').classList.add('hide');
-      enterAdmin();
-    }).catch(()=>{
-      STATE.adminToken=null;
-      localStorage.removeItem('lao_admin_token');
-      localStorage.removeItem('lao_admin_role');
-      localStorage.removeItem('lao_admin_name');
-      loadStorefront();
+    gsRun('adminGetSettings', STATE.adminToken).catch(err=>{
+      if(String(err.message).includes('SESSION_EXPIRED')){
+        STATE.adminToken = null;
+        STATE.adminRole = null;
+        STATE.adminUser = null;
+        localStorage.removeItem('lao_admin_token');
+        localStorage.removeItem('lao_admin_role');
+        localStorage.removeItem('lao_admin_name');
+      }
+      // ຖ້າເປັນຂໍ້ຜິດພາດອື່ນ (ເຊັ່ນ Network ຂາດຊົ່ວຄາວ) ຈະບໍ່ລຶບ Token ອອກ
+      // ເພື່ອບໍ່ໃຫ້ຕ້ອງ Login ໃໝ່ທຸກຄັ້ງທີ່ອິນເຕີເນັດມີບັນຫາຊົ່ວຄາວ.
     });
-  } else {
-    loadStorefront();
   }
 }
 function loadStorefront(){
@@ -1018,6 +1028,19 @@ function doAdminLogout(){
 function backToStore(){
   document.getElementById('adminShell').classList.add('hide');
   document.getElementById('storefront').classList.remove('hide');
+  // ແກ້ໄຂ: ໂຫຼດ ແລະ Render ຂໍ້ມູນໜ້າຮ້ານຄືນໃໝ່ທຸກຄັ້ງທີ່ກັບຈາກ Admin
+  // (ເຊັ່ນ: ຖ້າມີການແກ້ໄຂສິນຄ້າ/ໝວດ/Banner/ຕັ້ງຄ່າ ຢູ່ໃນ Admin) ເພື່ອບໍ່ໃຫ້ໜ້າຮ້ານ
+  // ສະແດງຂໍ້ມູນເກົ່າ ຫຼື ຫວ່າງເປົ່າ.
+  gsRun('getInitData').then(d=>{
+    DATA = d;
+    applySettingsToUI();
+    renderHero();
+    renderPromoTicker();
+    renderCategories();
+    renderProducts();
+    renderShippingOptions();
+    updateCartBadge();
+  }).catch(()=>{ /* ຖ້າໂຫຼດຄືນບໍ່ໄດ້ ໃຫ້ໃຊ້ຂໍ້ມູນ Storefront ທີ່ Render ໄວ້ແລ້ວກ່ອນໜ້ານີ້ */ });
 }
 
 /* ============================================================
