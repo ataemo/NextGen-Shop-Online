@@ -272,6 +272,15 @@ a{color:inherit;text-decoration:none;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);}
 .field textarea{resize:vertical;min-height:70px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.checkout-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;}
+.checkout-card .ck-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:14px;color:var(--text);}
+.phone-input-group{display:flex;gap:8px;}
+.phone-input-group .cc{display:flex;align-items:center;gap:4px;padding:0 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-size:14px;font-weight:600;flex-shrink:0;}
+.phone-hint{font-size:11px;color:var(--text-muted);margin-top:6px;margin-bottom:14px;}
+.ship-method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.ship-method-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg);font-size:11px;font-weight:700;text-align:center;}
+.ship-method-btn .ic{font-size:18px;}
+.ship-method-btn.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark);}
 .btn{
   padding:13px 18px;border-radius:var(--radius-md);font-weight:700;font-size:14px;
   display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,opacity .15s;
@@ -501,17 +510,35 @@ table tr:hover td{background:var(--primary-light);}
       <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
       <h4 style="margin:0 0 12px;font-family:var(--font-display);">📋 ຂໍ້ມູນການສັ່ງຊື້</h4>
 
-      <div class="field"><label>ຊື່ ແລະ ນາມສະກຸນ *</label><input id="ckName"></div>
-      <div class="field"><label>ເບີໂທຕິດຕໍ່ *</label><input id="ckPhone" type="tel"></div>
-      <div class="row2">
-        <div class="field"><label>ແຂວງ</label><input id="ckProvince"></div>
-        <div class="field"><label>ເມືອງ</label><input id="ckDistrict"></div>
+      <div class="checkout-card">
+        <div class="ck-title">👤 ຂໍ້ມູນຜູ້ຊື້</div>
+        <div class="field"><label>ຊື່ ແລະ ນາມສະກຸນ *</label><input id="ckName" placeholder="ໃສ່ຊື່"></div>
+        <div class="field" style="margin-bottom:2px;"><label>ເບີໂທ *</label>
+          <div class="phone-input-group">
+            <div class="cc">🇱🇦 +856</div>
+            <input id="ckPhone" type="tel" placeholder="99999999" style="flex:1;">
+          </div>
+        </div>
+        <div class="phone-hint">ໃສ່ພຽງ 8 ໂຕເລກ ບໍ່ຕ້ອງໃສ່ 020 ນຳໜ້າ (ລະບົບຈະຕື່ມລະຫັດປະເທດໃຫ້ອັດຕະໂນມັດ)</div>
       </div>
-      <div class="field"><label>ບ້ານ / ໝູ່ບ້ານ</label><input id="ckVillage"></div>
-      <div class="field"><label>ທີ່ຢູ່ລະອຽດ *</label><textarea id="ckAddress"></textarea></div>
-      <div class="field"><label>ໝາຍເຫດ</label><textarea id="ckNote"></textarea></div>
-      <div class="field"><label>ບໍລິສັດຂົນສົ່ງ</label>
-        <select id="ckShipping" onchange="updateShippingFee()"></select>
+
+      <div class="checkout-card">
+        <div class="ck-title">📍 ທີ່ຢູ່ຈັດສົ່ງ</div>
+        <div class="field"><label>ແຂວງ *</label>
+          <select id="ckProvince" onchange="onProvinceChange()"><option value="">— ເລືອກແຂວງ —</option></select>
+        </div>
+        <div class="field"><label>ເມືອງ *</label>
+          <select id="ckDistrict"><option value="">— ກະລຸນາເລືອກແຂວງກ່ອນ —</option></select>
+        </div>
+        <div class="field"><label>ບ້ານ / ໝູ່ບ້ານ</label><input id="ckVillage" placeholder="ບ້ານ..."></div>
+        <div class="field"><label>ທີ່ຢູ່ລະອຽດ *</label><textarea id="ckAddress" placeholder="ຖະໜົນ, ຈຸດສັງເກດ..."></textarea></div>
+        <div class="field" style="margin-bottom:0;"><label>ໝາຍເຫດ</label><textarea id="ckNote" placeholder="ໝາຍເຫດເພີ່ມເຕີມ (ຖ້າມີ)"></textarea></div>
+      </div>
+
+      <div class="checkout-card">
+        <div class="ck-title">🚚 ຮັບສົ່ງ</div>
+        <div class="ship-method-grid" id="shipMethodGrid"></div>
+        <div class="field" style="margin-bottom:0;"><label>ສາຂາ / ຈຸດຮັບ</label><input id="ckBranch" placeholder="ລະບຸສາຂາ (ຖ້າມີ)"></div>
       </div>
       <div class="field"><label>ຊ່ອງທາງຊຳລະເງິນ *</label>
         <select id="ckPayment" onchange="renderPaymentInfo()">
@@ -689,6 +716,7 @@ function saveCart(){ localStorage.setItem('lao_cart', JSON.stringify(STATE.cart)
 window.addEventListener('load', init);
 function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
+  renderProvinceOptions();
 
   // ສະແດງໜ້າຮ້ານທັນທີ ບໍ່ຕ້ອງລໍ Loader
   document.getElementById('loader').classList.add('hide');
@@ -1050,11 +1078,26 @@ function applyCoupon(){
 /* ============================================================
    CHECKOUT
    ============================================================ */
-function renderShippingOptions(){
-  const sel = document.getElementById('ckShipping');
-  sel.innerHTML = DATA.shipping.map(s=>`<option value="${s.Name}" data-fee="${s.Fee}">${s.Name} — ${fmt(s.Fee)} ₭</option>`).join('');
+const SHIP_ICONS = ['✈️','🚛','🚚','📦','🚢'];
+function renderShipMethods(){
+  const grid = document.getElementById('shipMethodGrid');
+  if(!grid || !DATA.shipping) return;
+  if(!DATA.shipping.length){ grid.innerHTML=''; return; }
+  if(!STATE.checkoutShipping || !DATA.shipping.find(s=>s.Name===STATE.checkoutShipping)){
+    STATE.checkoutShipping = DATA.shipping[0].Name;
+  }
+  grid.innerHTML = DATA.shipping.map((s,i)=>`
+    <button type="button" class="ship-method-btn ${STATE.checkoutShipping===s.Name?'active':''}" onclick="selectShipMethod('${String(s.Name).replace(/'/g,"\\'")}')">
+      <span class="ic">${SHIP_ICONS[i%SHIP_ICONS.length]}</span>
+      <span>${s.Name}</span>
+      <span style="font-weight:500;color:var(--text-muted);">${fmt(s.Fee)} ₭</span>
+    </button>`).join('');
+  renderCheckoutSummary();
 }
-function updateShippingFee(){ renderCheckoutSummary(); }
+function selectShipMethod(name){
+  STATE.checkoutShipping = name;
+  renderShipMethods();
+}
 function renderPaymentInfo(){
   const method = document.getElementById('ckPayment').value;
   const box = document.getElementById('paymentInfoBox');
@@ -1074,9 +1117,8 @@ function previewSlip(e){
 }
 
 function shippingFee(){
-  const sel = document.getElementById('ckShipping');
-  const opt = sel.options[sel.selectedIndex];
-  const fee = opt ? Number(opt.dataset.fee||0) : 0;
+  const ship = DATA.shipping.find(s=>s.Name===STATE.checkoutShipping);
+  const fee = ship ? Number(ship.Fee||0) : 0;
   const freeMin = Number(DATA.settings.freeShippingMin||0);
   return cartSubtotal() >= freeMin ? 0 : fee;
 }
@@ -1094,13 +1136,13 @@ function placeOrder(){
   if(!name || !phone || !address){ toast('ກະລຸນາຕື່ມຂໍ້ມູນທີ່ຈຳເປັນໃຫ້ຄົບ (*)','error'); return; }
   const btn = document.getElementById('placeOrderBtn');
   btn.disabled = true; btn.textContent = 'ກຳລັງສົ່ງອໍເດີ...';
-  const order = {
+    const order = {
     customerName:name, phone, address,
     province:document.getElementById('ckProvince').value,
     district:document.getElementById('ckDistrict').value,
     village:document.getElementById('ckVillage').value,
-    note:document.getElementById('ckNote').value,
-    shippingCompany:document.getElementById('ckShipping').value,
+    note:(document.getElementById('ckBranch').value.trim() ? '[ສາຂາ/ຈຸດຮັບ: '+document.getElementById('ckBranch').value.trim()+'] ' : '') + document.getElementById('ckNote').value,
+    shippingCompany: STATE.checkoutShipping || '',
     paymentMethod:document.getElementById('ckPayment').value,
     slipDataUrl: slipDataUrl,
     couponCode: STATE.couponApplied ? STATE.couponApplied.code : '',
@@ -1119,6 +1161,40 @@ function placeOrder(){
     toast('ເກີດຂໍ້ຜິດພາດ: '+err.message,'error');
     btn.disabled=false; btn.textContent='ຢືນຢັນສັ່ງຊື້';
   });
+}
+const LAO_PROVINCES = {
+  'ນະຄອນຫຼວງວຽງຈັນ': ['ຈັນທະບູລີ','ສີສັດຕະນາກ','ໄຊເສດຖາ','ສີໂຄດຕະບອງ','ຫາດຊາຍຟອງ','ນາຊາຍທອງ','ໄຊທານີ','ປາກງື່ມ','ສັງທອງ'],
+  'ຜົ້ງສາລີ': ['ຜົ້ງສາລີ','ໃໝ','ຄວາ','ຍອດອູ','ບຸນເໜືອ','ບຸນໃຕ້','ສຳພັນ'],
+  'ຫຼວງນ້ຳທາ': ['ນ້ຳທາ','ສິງ','ລອງ','ວຽງພູຄາ','ນາແລ'],
+  'ອຸດົມໄຊ': ['ໄຊ','ລາ','ນາໝໍ້','ບຶງ','ຫຼາ','ຮຸນ','ປາກແບ່ງ'],
+  'ບໍ່ແກ້ວ': ['ຫ້ວຍຊາຍ','ຕົ້ນເຜິ້ງ','ພະອຸດົມ','ປາກທາ','ເມິງ'],
+  'ຫຼວງພະບາງ': ['ຫຼວງພະບາງ','ຊຽງເງິນ','ນານ','ປາກອູ','ນຳບາກ','ງອຍ','ປາກແຊງ','ໂພນທອງ','ຈອມເພັດ','ວຽງຄຳ','ພູຄູນ'],
+  'ຫົວພັນ': ['ຊຳເໜືອ','ຊຳໃຕ້','ຫວຽງໄຊ','ຫວຽງທອງ','ຊຽງຄໍ້','ຮວມ','ສົບເບົາ','ອາດສະພັງທອງ','ແອດ','ຊອນ'],
+  'ໄຊຍະບູລີ': ['ໄຊຍະບູລີ','ຄອບ','ຫົງສາ','ເງິນ','ບໍ່ແຕນ','ພຽງ','ທົ່ງມີໄຊ','ຄົງເຊໂດນ','ຜາກລາງ','ໄຊຍະເສດຖາ'],
+  'ຊຽງຂວາງ': ['ແປກ','ຄຳ','ໜອງແຮດ','ໜອງແຮ','ພູກູດ','ໝອກ','ຄູນ'],
+  'ວຽງຈັນ': ['ໂພນໂຮງ','ວັງວຽງ','ແກ້ວອຸດົມ','ກາສີ','ແມ່ດ','ຫິນເຫີບ','ຊະນະຄາມ','ຝ້າຍ','ໝື່ນ','ທຸລະຄົມ','ໂຊກ'],
+  'ບໍລິຄຳໄຊ': ['ປາກຊັນ','ທ່າພະບາດ','ປາກກະດິງ','ບໍລິຄັນ','ຄຳເກີດ','ວຽງທອງ','ຊະນະຄາມ'],
+  'ຄຳມ່ວນ': ['ທະແຂກ','ໝາຍ','ໜອງບົກ','ຫີນບູນ','ຍົມມະລາດ','ບົວລະພາ','ນະຄາຍ','ຊະບັງໄຊ','ໄຊບົວທອງ'],
+  'ສະຫວັນນະເຂດ': ['ໄກສອນ ພົມວິຫານ','ອາດສະພັງທອງ','ພະລານໄຊ','ຈຳພອນ','ຊົນບົວລີ','ຊະນະຊຸມ','ວິລະບູລີ','ອຸທຸມພອນ','ຈຳລານ','ໄຊບຸລີ','ຫຼົມພຽງ','ນອງ','ທ່າປາງທອງ','ຊົງຄອນ'],
+  'ສາລະວັນ': ['ສາລະວັນ','ຄົງເຊໂດນ','ຕະໂອ້ຍ','ຕຸ້ມລານ','ເລົ່າງາມ','ວາປີ','ສະໝ້ວຍ'],
+  'ເຊກອງ': ['ລະມາມ','ກະລຶມ','ດັກຈຶງ','ທ່າແຕງ'],
+  'ຈຳປາສັກ': ['ປາກເຊ','ຊະນະສົມບູນ','ບາຈຽງຈະເລີນສຸກ','ພະທຸມພອນ','ໂພນທອງ','ໂຂງ','ມູນລະປະໂມກ','ສຸຂຸມາ','ໂຊະພຸ','ວາປີ'],
+  'ອັດຕະປື': ['ສາມັກຄີໄຊ','ສານໄຊ','ພູວົງ','ໄຊເສດຖາ'],
+  'ໄຊສົມບູນ': ['ອານຸວົງ','ຫິນເຫີບ','ທາທົມ','ລອງແຊງ']
+};
+function renderProvinceOptions(){
+  const sel = document.getElementById('ckProvince');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— ເລືອກແຂວງ —</option>' +
+    Object.keys(LAO_PROVINCES).map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+function onProvinceChange(){
+  const province = document.getElementById('ckProvince').value;
+  const distSel = document.getElementById('ckDistrict');
+  const districts = LAO_PROVINCES[province] || [];
+  distSel.innerHTML = districts.length
+    ? '<option value="">— ເລືອກເມືອງ —</option>' + districts.map(d=>`<option value="${d}">${d}</option>`).join('')
+    : '<option value="">— ກະລຸນາເລືອກແຂວງກ່ອນ —</option>';
 }
 function closeSuccessModal(){ document.getElementById('successModal').classList.add('hide'); switchTab('home'); }
 
