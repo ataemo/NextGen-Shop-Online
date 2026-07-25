@@ -143,11 +143,11 @@ a{color:inherit;text-decoration:none;}
 .cat-scroll{display:flex;gap:10px;overflow-x:auto;padding:6px 16px 10px;scrollbar-width:none;}
 .cat-scroll::-webkit-scrollbar{display:none;}
 .cat-chip{
-  flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;width:68px;
+  flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;width:84px;
 }
 .cat-chip .ic{
-  width:56px;height:56px;border-radius:18px;background:var(--surface);border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:var(--shadow-soft);
+  width:76px;height:76px;border-radius:22px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:var(--shadow-soft);
   transition:transform .15s, border-color .15s;
 }
 .cat-chip.active .ic{border-color:var(--primary);background:var(--primary-light);}
@@ -165,7 +165,7 @@ a{color:inherit;text-decoration:none;}
   display:flex;flex-direction:column;transition:transform .18s;
 }
 .card:active{transform:scale(.97);}
-.card .imgwrap{position:relative;aspect-ratio:1/1;background:var(--primary-light);overflow:hidden;}
+.card .imgwrap{position:relative;aspect-ratio:4/5;background:var(--primary-light);overflow:hidden;}
 .card .imgwrap img{width:100%;height:100%;object-fit:cover;}
 .card .fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:15px;backdrop-filter:blur(6px);}
 .card .badge-tag{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;color:#fff;}
@@ -610,6 +610,10 @@ window.addEventListener('load', init);
 function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
 
+  // ສະແດງໜ້າຮ້ານທັນທີ ບໍ່ຕ້ອງລໍ Loader
+  document.getElementById('loader').classList.add('hide');
+  document.getElementById('storefront').classList.remove('hide');
+
   // ແກ້ໄຂ: ບໍ່ວ່າຈະເຄີຍ Login Admin ໄວ້ ຫຼື ບໍ່ກໍ່ຕາມ, ທຸກຄັ້ງທີ່ເປີດ/ຣີເຟຣັດລະບົບ
   // ໃຫ້ໂຫຼດ ແລະ ສະແດງໜ້າຮ້ານ (Storefront) ເປັນຄ່າເລີ່ມຕົ້ນສະເໝີ. ນອກຈາກຈະແກ້ບັນຫາ
   // "ຣີເຟຣັດແລ້ວຕິດຄ້າງຢູ່ໜ້າ Admin" ແລ້ວ, ຍັງແກ້ບັນຫາ "ກັບໄປໜ້າຮ້ານແລ້ວຂໍ້ມູນຫາຍ"
@@ -652,6 +656,20 @@ function loadStorefront(){
     document.getElementById('loader').innerHTML = '<div style="color:var(--danger);padding:20px;text-align:center;font-size:13px;">ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດຂໍ້ມູນ:<br>'+err.message+'<br><br>ກະລຸນາກວດສອບວ່າ API_URL ຖືກຕ້ອງ ແລະ ໄດ້ Deploy Web App ແບບ "Anyone" ແລ້ວ.</div>';
   });
 }
+
+function silentRefreshData(){
+  gsRun('getInitData').then(data=>{
+    DATA = data;
+    applySettingsToUI();
+    renderHero();
+    renderPromoTicker();
+    renderCategories();
+    renderProducts();
+    renderShippingOptions();
+    updateCartBadge();
+  }).catch(()=>{ /* ຖ້າຜິດພາດຊົ່ວຄາວ ບໍ່ຕ້ອງລົບກວນຜູ້ໃຊ້ */ });
+}
+setInterval(silentRefreshData, 15000); // ອັບເດດທຸກ 15 ວິນາທີ
 
 function applySettingsToUI(){
   const s = DATA.settings;
@@ -1074,13 +1092,14 @@ function renderAdminNav(){
       <span class="ic">${m.ic}</span> ${m.label}
     </button>`).join('');
 }
+let adminTabCache = {};
 function openAdminTab(tab){
   STATE.adminTab = tab;
-  document.getElementById('adminSide').classList.remove('show'); // ← ເພີ່ມແຖວນີ້
+  document.getElementById('adminSide').classList.remove('show');
   renderAdminNav();
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
-  content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div>`;
+  content.innerHTML = adminTabCache[tab] || `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div>`;
   const renderers = {
     dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
     categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
@@ -1088,6 +1107,7 @@ function openAdminTab(tab){
     analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
   };
   (renderers[tab]||function(){})();
+  setTimeout(()=>{ adminTabCache[tab] = document.getElementById('adminContent').innerHTML; }, 800);
 }
 function adminCall(fn, ...args){
   return gsRun(fn, STATE.adminToken, ...args).catch(err=>{
