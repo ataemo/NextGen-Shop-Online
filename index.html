@@ -496,48 +496,41 @@ table tr:hover td{background:var(--primary-light);}
       </div>
       <div class="cart-summary-row"><span>ລວມຍ່ອຍ</span><span id="sumSubtotal">0</span></div>
       <div class="cart-summary-row"><span>ສ່ວນຫຼຸດ</span><span id="sumDiscount">0</span></div>
-      <div class="cart-summary-row total"><span>ລວມທັງໝົດ</span><span id="sumTotal">0</span></div>
-      <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="goCheckout()">ດຳເນີນການສັ່ງຊື້ →</button>
-    </div>
-  </div>
-</div>
 
-<!-- Checkout Sheet -->
-<div class="sheet" id="checkoutSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-header"><h3>ຂໍ້ມູນການສັ່ງຊື້</h3><button class="close-x" onclick="closeSheet('checkoutSheet')">✕</button></div>
-  <div class="sheet-body">
-    <div class="field"><label>ຊື່ ແລະ ນາມສະກຸນ *</label><input id="ckName"></div>
-    <div class="field"><label>ເບີໂທຕິດຕໍ່ *</label><input id="ckPhone" type="tel"></div>
-    <div class="row2">
-      <div class="field"><label>ແຂວງ</label><input id="ckProvince"></div>
-      <div class="field"><label>ເມືອງ</label><input id="ckDistrict"></div>
-    </div>
-    <div class="field"><label>ບ້ານ / ໝູ່ບ້ານ</label><input id="ckVillage"></div>
-    <div class="field"><label>ທີ່ຢູ່ລະອຽດ *</label><textarea id="ckAddress"></textarea></div>
-    <div class="field"><label>ໝາຍເຫດ</label><textarea id="ckNote"></textarea></div>
-    <div class="field"><label>ບໍລິສັດຂົນສົ່ງ</label>
-      <select id="ckShipping" onchange="updateShippingFee()"></select>
-    </div>
-    <div class="field"><label>ຊ່ອງທາງຊຳລະເງິນ *</label>
-      <select id="ckPayment" onchange="renderPaymentInfo()">
-        <option value="COD">ເກັບເງິນປາຍທາງ (COD)</option>
-        <option value="Transfer">ໂອນຜ່ານທະນາຄານ / QR</option>
-      </select>
-    </div>
-    <div id="paymentInfoBox" class="hide" style="background:var(--bg);border-radius:14px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:13px;line-height:1.8;" id="paymentInfoText"></div>
-      <img id="qrImg" class="hide" style="width:140px;margin:8px auto 0;border-radius:10px;">
-      <div class="field" style="margin-top:10px;"><label>ອັບໂຫຼດສະລິບການໂອນເງິນ</label>
-        <input type="file" id="slipFile" accept="image/*" onchange="previewSlip(event)">
-        <img id="slipPreview" class="hide" style="width:100px;margin-top:8px;border-radius:10px;">
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+      <h4 style="margin:0 0 12px;font-family:var(--font-display);">📋 ຂໍ້ມູນການສັ່ງຊື້</h4>
+
+      <div class="field"><label>ຊື່ ແລະ ນາມສະກຸນ *</label><input id="ckName"></div>
+      <div class="field"><label>ເບີໂທຕິດຕໍ່ *</label><input id="ckPhone" type="tel"></div>
+      <div class="row2">
+        <div class="field"><label>ແຂວງ</label><input id="ckProvince"></div>
+        <div class="field"><label>ເມືອງ</label><input id="ckDistrict"></div>
       </div>
+      <div class="field"><label>ບ້ານ / ໝູ່ບ້ານ</label><input id="ckVillage"></div>
+      <div class="field"><label>ທີ່ຢູ່ລະອຽດ *</label><textarea id="ckAddress"></textarea></div>
+      <div class="field"><label>ໝາຍເຫດ</label><textarea id="ckNote"></textarea></div>
+      <div class="field"><label>ບໍລິສັດຂົນສົ່ງ</label>
+        <select id="ckShipping" onchange="updateShippingFee()"></select>
+      </div>
+      <div class="field"><label>ຊ່ອງທາງຊຳລະເງິນ *</label>
+        <select id="ckPayment" onchange="renderPaymentInfo()">
+          <option value="COD">ເກັບເງິນປາຍທາງ (COD)</option>
+          <option value="Transfer">ໂອນຜ່ານທະນາຄານ / QR</option>
+        </select>
+      </div>
+      <div id="paymentInfoBox" class="hide" style="background:var(--bg);border-radius:14px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;line-height:1.8;" id="paymentInfoText"></div>
+        <img id="qrImg" class="hide" style="width:140px;margin:8px auto 0;border-radius:10px;">
+        <div class="field" style="margin-top:10px;"><label>ອັບໂຫຼດສະລິບການໂອນເງິນ</label>
+          <input type="file" id="slipFile" accept="image/*" onchange="previewSlip(event)">
+          <img id="slipPreview" class="hide" style="width:100px;margin-top:8px;border-radius:10px;">
+        </div>
+      </div>
+
+      <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span id="ckShipFee">0</span></div>
+      <div class="cart-summary-row total"><span>ຍອດຊຳລະ</span><span id="ckTotal">0</span></div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="placeOrder()" id="placeOrderBtn">ຢືນຢັນສັ່ງຊື້</button>
     </div>
-    <div class="cart-summary-row"><span>ລວມຍ່ອຍ</span><span id="ckSubtotal">0</span></div>
-    <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span id="ckShipFee">0</span></div>
-    <div class="cart-summary-row"><span>ສ່ວນຫຼຸດ</span><span id="ckDiscount">0</span></div>
-    <div class="cart-summary-row total"><span>ຍອດຊຳລະ</span><span id="ckTotal">0</span></div>
-    <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="placeOrder()" id="placeOrderBtn">ຢືນຢັນສັ່ງຊື້</button>
   </div>
 </div>
 
@@ -983,7 +976,7 @@ function quickAdd(id){
 function addToCart(buyNow){
   addItemToCart(currentProduct, detailState.qty, detailState.color, detailState.size);
   closeSheet('productSheet');
-  if(buyNow) goCheckout(); else openCart();
+  openCart();
 }
 function addItemToCart(p, qty, color, size){
   const key = p.ID+'|'+color+'|'+size;
@@ -1003,7 +996,7 @@ function updateCartBadge(){
 /* ============================================================
    CART
    ============================================================ */
-function openCart(){ renderCart(); openSheet('cartSheet'); }
+function openCart(){ renderCart(); renderShippingOptions(); renderPaymentInfo(); openSheet('cartSheet'); }
 function renderCart(){
   const list = document.getElementById('cartList');
   document.getElementById('cartCount').textContent = STATE.cart.reduce((s,i)=>s+i.qty,0);
@@ -1026,6 +1019,7 @@ function renderCart(){
       <button onclick="removeCartItem('${i.key}')" style="color:var(--danger);font-size:16px;">🗑️</button>
     </div>`).join('');
   renderCartSummary();
+  renderCheckoutSummary();
 }
 function changeCartQty(key,d){
   const item = STATE.cart.find(i=>i.key===key);
@@ -1077,13 +1071,7 @@ function previewSlip(e){
   reader.onload = ()=>{ slipDataUrl = reader.result; document.getElementById('slipPreview').src = slipDataUrl; document.getElementById('slipPreview').classList.remove('hide'); };
   reader.readAsDataURL(file);
 }
-function goCheckout(){
-  if(!STATE.cart.length){ toast('ກະຕ່າວ່າງເປົ່າ','error'); return; }
-  closeSheet('cartSheet');
-  renderPaymentInfo();
-  renderCheckoutSummary();
-  openSheet('checkoutSheet');
-}
+
 function shippingFee(){
   const sel = document.getElementById('ckShipping');
   const opt = sel.options[sel.selectedIndex];
@@ -1095,9 +1083,7 @@ function renderCheckoutSummary(){
   const subtotal = cartSubtotal();
   const discount = STATE.couponApplied ? STATE.couponApplied.discount : 0;
   const fee = shippingFee();
-  document.getElementById('ckSubtotal').textContent = fmt(subtotal)+' ₭';
   document.getElementById('ckShipFee').textContent = fee===0 ? 'ຟຣີ' : fmt(fee)+' ₭';
-  document.getElementById('ckDiscount').textContent = '-'+fmt(discount)+' ₭';
   document.getElementById('ckTotal').textContent = fmt(Math.max(0,subtotal-discount+fee))+' ₭';
 }
 function placeOrder(){
@@ -1123,7 +1109,7 @@ function placeOrder(){
   gsRun('submitOrder', order).then(res=>{
     STATE.cart = []; STATE.couponApplied = null; slipDataUrl='';
     saveCart();
-    closeSheet('checkoutSheet');
+    closeSheet('cartSheet');
     document.getElementById('successOrderId').textContent = res.orderId;
     document.getElementById('successModal').classList.remove('hide');
     btn.disabled=false; btn.textContent='ຢືນຢັນສັ່ງຊື້';
