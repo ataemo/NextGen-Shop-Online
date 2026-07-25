@@ -329,6 +329,10 @@ table tr:hover td{background:var(--primary-light);}
 .mini-btn{width:30px;height:30px;border-radius:8px;background:var(--bg);display:inline-flex;align-items:center;justify-content:center;margin-right:4px;}
 .tag-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .svg-chart{width:100%;height:180px;}
+@keyframes skeletonPulse{0%,100%{opacity:.5;}50%{opacity:.9;}}
+.skeleton{background:var(--primary-light);border-radius:var(--radius-md);animation:skeletonPulse 1.4s ease-in-out infinite;}
+.skeleton-cat{width:76px;height:76px;border-radius:22px;}
+.skeleton-card{aspect-ratio:4/5;}
 </style>
 </head>
 <body>
@@ -359,7 +363,11 @@ table tr:hover td{background:var(--primary-light);}
 
   <div class="hero-wrap">
     <div class="hero-slider" id="heroSlider">
-      <div class="hero-track" id="heroTrack"></div>
+      <div class="hero-track" id="heroTrack">
+        <div class="hero-slide" style="display:flex;align-items:center;justify-content:center;">
+          <div style="color:#fff;font-family:var(--font-display);font-weight:700;opacity:.85;">🛍️ ກຳລັງໂຫຼດ...</div>
+        </div>
+      </div>
       <div class="hero-dots" id="heroDots"></div>
     </div>
   </div>
@@ -369,10 +377,20 @@ table tr:hover td{background:var(--primary-light);}
   </div>
 
   <div class="section-title"><h3>ໝວດໝູ່ສິນຄ້າ</h3></div>
-  <div class="cat-scroll" id="catScroll"></div>
+  <div class="cat-scroll" id="catScroll">
+    <div class="cat-chip"><div class="ic skeleton skeleton-cat"></div></div>
+    <div class="cat-chip"><div class="ic skeleton skeleton-cat"></div></div>
+    <div class="cat-chip"><div class="ic skeleton skeleton-cat"></div></div>
+    <div class="cat-chip"><div class="ic skeleton skeleton-cat"></div></div>
+  </div>
 
   <div class="section-title"><h3 id="prodTitle">ສິນຄ້າແນະນຳ</h3></div>
-  <div class="grid" id="productGrid"></div>
+  <div class="grid" id="productGrid">
+    <div class="card"><div class="imgwrap skeleton skeleton-card"></div><div class="body"><div class="skeleton" style="height:14px;border-radius:6px;"></div></div></div>
+    <div class="card"><div class="imgwrap skeleton skeleton-card"></div><div class="body"><div class="skeleton" style="height:14px;border-radius:6px;"></div></div></div>
+    <div class="card"><div class="imgwrap skeleton skeleton-card"></div><div class="body"><div class="skeleton" style="height:14px;border-radius:6px;"></div></div></div>
+    <div class="card"><div class="imgwrap skeleton skeleton-card"></div><div class="body"><div class="skeleton" style="height:14px;border-radius:6px;"></div></div></div>
+  </div>
 
   <div class="bottom-nav" id="bottomNav">
     <div class="nav-pill" id="navPill"></div>
