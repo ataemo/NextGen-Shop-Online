@@ -362,8 +362,12 @@ table{width:100%;border-collapse:collapse;font-size:13px;}
 table th{text-align:left;color:var(--text-muted);font-weight:700;padding:8px 10px;border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
 table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 table tr:hover td{background:var(--primary-light);}
-.table-wrap{overflow-x:auto;}
-.mini-btn{width:30px;height:30px;border-radius:8px;background:var(--bg);display:inline-flex;align-items:center;justify-content:center;margin-right:4px;}
+.order-filter-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:12px;scrollbar-width:none;}
+.order-filter-tabs::-webkit-scrollbar{display:none;}
+.filter-tab{flex-shrink:0;padding:8px 16px;border-radius:20px;background:var(--bg);border:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;transition:all .15s;}
+.filter-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.filter-tab .cnt{opacity:.75;font-weight:500;margin-left:2px;}
+.chip-select{padding:6px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-weight:700;color:var(--text);}
 .tag-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .svg-chart{width:100%;height:180px;}
 @keyframes skeletonPulse{0%,100%{opacity:.5;}50%{opacity:.9;}}
@@ -1204,9 +1208,18 @@ function closeSuccessModal(){ document.getElementById('successModal').classList.
    TRACK MY ORDERS (public, by phone)
    ============================================================ */
 function openMyOrders(){ openSheet('myOrdersSheet'); }
+let trackPollTimer = null;
 function trackOrders(){
   const phone = document.getElementById('trackPhone').value.trim();
   if(!phone){ toast('ກະລຸນາໃສ່ເບີໂທ','error'); return; }
+  clearInterval(trackPollTimer);
+  doTrackFetch(phone);
+  trackPollTimer = setInterval(()=>{
+    if(!document.getElementById('myOrdersSheet').classList.contains('show')){ clearInterval(trackPollTimer); return; }
+    doTrackFetch(phone, true);
+  }, 6000);
+}
+function doTrackFetch(phone, silent){
   gsRun('publicTrackByPhone', phone).then(orders=>{
     const list = document.getElementById('myOrdersList');
     if(!orders.length){ list.innerHTML = `<div class="empty-state"><div class="ic">📭</div>ບໍ່ພົບອໍເດີສຳລັບເບີນີ້</div>`; return; }
@@ -1215,7 +1228,7 @@ function trackOrders(){
         <div style="display:flex;justify-content:space-between;"><b>${o.OrderID}</b><span class="chip chip-${(o.Status||'').toLowerCase()}">${o.Status}</span></div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">ຍອດລວມ: ${fmt(o.Total)} ₭ · Tracking: ${o.TrackingNumber||'-'}</div>
       </div>`).join('');
-  }).catch(()=>toast('ບໍ່ສາມາດຄົ້ນຫາໄດ້','error'));
+  }).catch(()=>{ if(!silent) toast('ບໍ່ສາມາດຄົ້ນຫາໄດ້','error'); });
 }
 
 /* ============================================================
@@ -1330,6 +1343,7 @@ function renderAdminNav(){
 }
 let adminTabCache = {};
 function openAdminTab(tab){
+  stopOrdersAutoRefresh();
   STATE.adminTab = tab;
   document.getElementById('adminSide').classList.remove('show');
   renderAdminNav();
@@ -1409,36 +1423,225 @@ function drawLineChart(containerId, data){
 
 /* ---------- ORDERS ---------- */
 const STATUS_LIST = ['Pending','Paid','Preparing','Packing','Shipping','Delivered','Completed','Cancelled'];
+let ORDERS_CACHE = [];
+let orderStatusFilter = 'all';
+let ordersAutoRefreshTimer = null;
+let printOrderCache = null;
+
+const STATUS_ICONS = {Pending:'⏳',Paid:'💰',Preparing:'🍳',Packing:'📦',Shipping:'🚚',Delivered:'📬',Completed:'🎉',Cancelled:'❌'};
+const ORDER_FILTERS = [
+  {key:'all', label:'ທັງໝົດ'}, {key:'Pending', label:'ລໍຖ້າ'}, {key:'Paid', label:'ຊຳລະ'},
+  {key:'Preparing', label:'ກຽມ'}, {key:'Packing', label:'ຈັດຊຸດ'}, {key:'Shipping', label:'ຈັດສົ່ງ'},
+  {key:'Completed', label:'ສຳເລັດ'}, {key:'Cancelled', label:'ຍົກເລີກ'}
+];
+
 function renderAdminOrders(){
   adminCall('adminGetOrders').then(orders=>{
+    ORDERS_CACHE = orders;
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
+        <div class="field" style="margin-bottom:12px;"><input id="orderSearchInput" placeholder="🔍 ຄົ້ນຫາ ເລກອໍເດີ / ຊື່ / ເບີໂທ..." oninput="renderOrdersTable()"></div>
+        <div class="order-filter-tabs" id="orderFilterTabs"></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ອໍເດີ</th><th>ລູກຄ້າ</th><th>ວັນທີ</th><th>ຍອດລວມ</th><th>ສະຖານະ</th><th>Tracking</th><th></th></tr></thead>
-          <tbody>${orders.map(o=>`
-            <tr>
-              <td><b>${o.OrderID}</b></td>
-              <td>${o.CustomerName}<br><span style="color:var(--text-muted);font-size:11px;">${o.Phone}</span></td>
-              <td>${new Date(o.Date).toLocaleDateString('lo-LA')}</td>
-              <td>${fmt(o.Total)} ₭</td>
-              <td><select onchange="updateOrderStatus('${o.OrderID}', this.value)">
-                ${STATUS_LIST.map(s=>`<option value="${s}" ${s===o.Status?'selected':''}>${s}</option>`).join('')}
-              </select></td>
-              <td><input value="${o.TrackingNumber||''}" style="width:100px;padding:6px;border-radius:8px;border:1px solid var(--border);" onchange="updateTracking('${o.OrderID}', this.value)"></td>
-              <td><button class="mini-btn" onclick='printInvoice(${JSON.stringify(o).replace(/'/g,"&apos;")})'>🖨️</button></td>
-            </tr>`).join('')}
-          </tbody>
+          <thead><tr><th>ລະອຽດ</th><th>ລູກຄ້າ</th><th>ຍອດ</th><th>SLIP</th><th>ສະຖານະ</th><th>ວັນທີ</th><th>ຈັດການ</th></tr></thead>
+          <tbody id="ordersTableBody"></tbody>
         </table></div>
-      </div>`;
+      </div>
+
+      <div class="modal-center-wrap hide" id="orderDetailModal">
+        <div class="modal-center" style="max-width:460px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;font-family:var(--font-display);">📦 ລາຍລະອຽດອໍເດີ</h3>
+            <button class="close-x" onclick="closeOrderDetail()">✕</button>
+          </div>
+          <div id="orderDetailBody"></div>
+        </div>
+      </div>
+
+      <div class="modal-center-wrap hide" id="orderPrintModal">
+        <div class="modal-center" style="max-width:460px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;font-family:var(--font-display);">📄 ຕົວຢ່າງໃບບິນ</h3>
+            <button class="close-x" onclick="closeOrderPrint()">✕</button>
+          </div>
+          <div id="orderPrintBody"></div>
+          <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="doPrintOrder()">🖨️ ພິມບິນ</button>
+        </div>
+      </div>
+
+      <div class="modal-center-wrap hide" id="slipViewModal" onclick="closeSlipView()">
+        <div class="modal-center" style="max-width:360px;text-align:center;" onclick="event.stopPropagation()">
+          <button class="close-x" style="margin-left:auto;display:flex;" onclick="closeSlipView()">✕</button>
+          <img id="slipViewImg" src="" style="width:100%;border-radius:12px;margin-top:8px;">
+        </div>
+      </div>
+    `;
+    renderOrderFilterTabs();
+    renderOrdersTable();
+    startOrdersAutoRefresh();
   });
 }
-function updateOrderStatus(orderId, status){
-  adminCall('adminUpdateOrderStatus', orderId, status).then(()=>toast('ອັບເດດສະຖານະສຳເລັດ'));
+
+function renderOrderFilterTabs(){
+  const el = document.getElementById('orderFilterTabs');
+  if(!el) return;
+  el.innerHTML = ORDER_FILTERS.map(f=>{
+    const count = f.key==='all' ? ORDERS_CACHE.length : ORDERS_CACHE.filter(o=>o.Status===f.key).length;
+    return `<button class="filter-tab ${orderStatusFilter===f.key?'active':''}" onclick="setOrderFilter('${f.key}')">${f.label} <span class="cnt">${count}</span></button>`;
+  }).join('');
 }
-function updateTracking(orderId, tracking){
-  adminCall('adminUpdateOrderStatus', orderId, null, tracking).then(()=>toast('ບັນທຶກເລກຕິດຕາມແລ້ວ'));
+function setOrderFilter(key){ orderStatusFilter = key; renderOrderFilterTabs(); renderOrdersTable(); }
+
+function renderOrdersTable(){
+  const searchEl = document.getElementById('orderSearchInput');
+  const body = document.getElementById('ordersTableBody');
+  if(!body || !searchEl) return;
+  const search = (searchEl.value||'').toLowerCase();
+  let list = ORDERS_CACHE.filter(o=>{
+    const matchStatus = orderStatusFilter==='all' || o.Status===orderStatusFilter;
+    const matchSearch = !search || (o.OrderID||'').toLowerCase().includes(search) || (o.CustomerName||'').toLowerCase().includes(search) || String(o.Phone||'').includes(search);
+    return matchStatus && matchSearch;
+  }).sort((a,b)=> new Date(b.Date) - new Date(a.Date));
+
+  if(!list.length){ body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">ບໍ່ພົບອໍເດີ</td></tr>`; return; }
+
+  body.innerHTML = list.map(o=>`
+    <tr>
+      <td><a href="javascript:void(0)" onclick="openOrderDetail('${o.OrderID}')" style="color:var(--primary);font-weight:700;">${o.OrderID}</a><br><span style="font-size:11px;color:var(--text-muted);">${(o.Items||[]).length} ລາຍການ</span></td>
+      <td>${o.CustomerName}<br><span style="font-size:11px;color:var(--text-muted);">${o.Phone}</span></td>
+      <td style="font-weight:700;color:var(--primary);">${fmt(o.Total)} ₭</td>
+      <td>${o.SlipURL ? `<img src="${o.SlipURL}" onclick="viewSlip('${o.SlipURL}')" style="width:40px;height:40px;border-radius:6px;object-fit:cover;cursor:pointer;">` : `<span style="color:var(--text-muted);font-size:11px;">ບໍ່ມີ</span>`}</td>
+      <td><select class="chip-select" onchange="quickUpdateStatus('${o.OrderID}', this.value)">
+        ${STATUS_LIST.map(s=>`<option value="${s}" ${s===o.Status?'selected':''}>${STATUS_ICONS[s]||''} ${s}</option>`).join('')}
+      </select></td>
+      <td style="font-size:12px;">${new Date(o.Date).toLocaleDateString('lo-LA')}</td>
+      <td>
+        <button class="mini-btn" title="ເບິ່ງລາຍລະອຽດ" onclick="openOrderDetail('${o.OrderID}')">👁️</button>
+        <button class="mini-btn" title="ພິມໃບບິນ" onclick="openPrintPreview('${o.OrderID}')">🖨️</button>
+        <button class="mini-btn" title="ລຶບ" onclick="deleteOrderAdmin('${o.OrderID}')">🗑️</button>
+      </td>
+    </tr>`).join('');
 }
-function printInvoice(order){
+
+function quickUpdateStatus(orderId, status){
+  adminCall('adminUpdateOrderStatus', orderId, status).then(()=>{
+    toast('ອັບເດດສະຖານະສຳເລັດ');
+    const o = ORDERS_CACHE.find(x=>x.OrderID===orderId); if(o) o.Status = status;
+    renderOrderFilterTabs();
+  });
+}
+
+/* ---- ລາຍລະອຽດອໍເດີ (popup) ---- */
+function openOrderDetail(orderId){
+  const o = ORDERS_CACHE.find(x=>x.OrderID===orderId);
+  if(!o) return;
+  document.getElementById('orderDetailBody').innerHTML = `
+    <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b style="color:var(--primary);">${o.OrderID}</b></div>
+    <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
+    <div class="cart-summary-row"><span>ຊື່ລູກຄ້າ</span><span>${o.CustomerName}</span></div>
+    <div class="cart-summary-row"><span>ເບີໂທ</span><span>${o.Phone}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', ')}</span></div>
+    <div class="cart-summary-row"><span>ສະຖານະ</span><span class="chip chip-${(o.Status||'').toLowerCase()}">${o.Status}</span></div>
+    <h4 style="margin:16px 0 8px;">ລາຍການສິນຄ້າ</h4>
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
+    <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
+    <div class="cart-summary-row total"><span>ຍອດລວມ</span><span>${fmt(o.Total)} ₭</span></div>
+
+    <h4 style="margin:16px 0 8px;">ອັບເດດສະຖານະ</h4>
+    <div style="display:flex;gap:8px;">
+      <select id="detailStatusSelect" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+        ${STATUS_LIST.map(s=>`<option value="${s}" ${s===o.Status?'selected':''}>${STATUS_ICONS[s]||''} ${s}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="saveDetailStatus('${o.OrderID}')">ບັນທຶກ</button>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Tracking Number</label>
+      <div style="display:flex;gap:8px;">
+        <input id="detailTrackingInput" value="${o.TrackingNumber||''}" placeholder="ໃສ່ Tracking Number...">
+        <button class="btn btn-outline btn-sm" onclick="saveDetailTracking('${o.OrderID}')">ບັນທຶກ</button>
+      </div>
+    </div>
+    ${o.SlipURL?`<div class="field"><label>Slip ການໂອນ</label><img src="${o.SlipURL}" style="width:120px;border-radius:10px;cursor:pointer;" onclick="viewSlip('${o.SlipURL}')"></div>`:''}
+  `;
+  document.getElementById('orderDetailModal').classList.remove('hide');
+}
+function closeOrderDetail(){ document.getElementById('orderDetailModal').classList.add('hide'); }
+function saveDetailStatus(orderId){
+  const status = document.getElementById('detailStatusSelect').value;
+  adminCall('adminUpdateOrderStatus', orderId, status).then(()=>{
+    toast('ອັບເດດສະຖານະສຳເລັດ');
+    const o = ORDERS_CACHE.find(x=>x.OrderID===orderId); if(o) o.Status=status;
+    renderOrderFilterTabs(); renderOrdersTable();
+  });
+}
+function saveDetailTracking(orderId){
+  const tracking = document.getElementById('detailTrackingInput').value.trim();
+  adminCall('adminUpdateOrderStatus', orderId, null, tracking).then(()=>{
+    toast('ບັນທຶກ Tracking ແລ້ວ');
+    const o = ORDERS_CACHE.find(x=>x.OrderID===orderId); if(o) o.TrackingNumber=tracking;
+  });
+}
+
+/* ---- ເບິ່ງ Slip (popup) ---- */
+function viewSlip(url){ document.getElementById('slipViewImg').src=url; document.getElementById('slipViewModal').classList.remove('hide'); }
+function closeSlipView(){ document.getElementById('slipViewModal').classList.add('hide'); }
+
+/* ---- ລຶບອໍເດີ ---- */
+function deleteOrderAdmin(orderId){
+  if(!confirm('ຢືນຢັນລຶບອໍເດີ '+orderId+' ນີ້? ຈະບໍ່ສາມາດກູ້ຄືນໄດ້')) return;
+  adminCall('adminDeleteOrder', orderId).then(()=>{
+    toast('ລຶບອໍເດີແລ້ວ');
+    ORDERS_CACHE = ORDERS_CACHE.filter(o=>o.OrderID!==orderId);
+    renderOrderFilterTabs(); renderOrdersTable();
+  });
+}
+
+/* ---- Realtime polling (Admin) ---- */
+function startOrdersAutoRefresh(){
+  stopOrdersAutoRefresh();
+  ordersAutoRefreshTimer = setInterval(()=>{
+    if(STATE.adminTab !== 'orders'){ stopOrdersAutoRefresh(); return; }
+    adminCall('adminGetOrders').then(orders=>{
+      ORDERS_CACHE = orders;
+      renderOrderFilterTabs();
+      renderOrdersTable();
+    }).catch(()=>{});
+  }, 8000);
+}
+function stopOrdersAutoRefresh(){ if(ordersAutoRefreshTimer){ clearInterval(ordersAutoRefreshTimer); ordersAutoRefreshTimer=null; } }
+/* ---- ຕົວຢ່າງໃບບິນ (popup) ---- */
+function openPrintPreview(orderId){
+  const o = ORDERS_CACHE.find(x=>x.OrderID===orderId);
+  if(!o) return;
+  printOrderCache = o;
+  const s = DATA.settings;
+  document.getElementById('orderPrintBody').innerHTML = `
+    <div style="text-align:center;margin-bottom:10px;">
+      ${s.logoUrl?`<img src="${s.logoUrl}" style="height:50px;margin-bottom:6px;">`:''}
+      <h3 style="margin:4px 0;">${s.storeName||'LAO SHOP'}</h3>
+      <div style="font-size:12px;color:var(--text-muted);">${s.contactPhone||''} · ${s.addressText||''}</div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);">
+    <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b>${o.OrderID}</b></div>
+    <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
+    <div class="cart-summary-row"><span>ລູກຄ້າ</span><span>${o.CustomerName} | ${o.Phone}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;">${o.Address}</span></div>
+    <hr style="border:none;border-top:1px solid var(--border);">
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
+    <hr style="border:none;border-top:1px solid var(--border);">
+    <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
+    <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
+    <div class="cart-summary-row total"><span>ລວມທັງໝົດ</span><span>${fmt(o.Total)} ₭</span></div>
+    <div class="panel" style="margin-top:10px;">
+      <div style="font-size:12px;"><b>${s.bankName||''}</b><br>ຊື່ບັນຊີ: ${s.bankAccountName||''}<br>ເລກບັນຊີ: ${s.bankAccountNumber||''}</div>
+      ${s.qrImageUrl?`<img src="${s.qrImageUrl}" style="width:120px;margin:8px auto 0;display:block;">`:''}
+    </div>
+  `;
+  document.getElementById('orderPrintModal').classList.remove('hide');
+}
+function closeOrderPrint(){ document.getElementById('orderPrintModal').classList.add('hide'); }
+function doPrintOrder(){ if(printOrderCache) printInvoiceWindow(printOrderCache); }
+
+function printInvoiceWindow(order){
   const s = DATA.settings;
   const items = order.Items||[];
   const win = window.open('','_blank');
