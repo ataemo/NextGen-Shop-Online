@@ -1525,6 +1525,7 @@ function renderOrdersTable(){
       <td>
         <button class="mini-btn" title="ເບິ່ງລາຍລະອຽດ" onclick="openOrderDetail('${o.OrderID}')">👁️</button>
         <button class="mini-btn" title="ພິມໃບບິນ" onclick="openPrintPreview('${o.OrderID}')">🖨️</button>
+        <button class="mini-btn" title="ພິມບິນຈັດສົ່ງ" onclick="printShippingLabelWindow(ORDERS_CACHE.find(x=>x.OrderID==='${o.OrderID}'))">🏷️</button>
         <button class="mini-btn" title="ລຶບ" onclick="deleteOrderAdmin('${o.OrderID}')">🗑️</button>
       </td>
     </tr>`).join('');
@@ -1573,6 +1574,7 @@ function openOrderDetail(orderId){
     <div class="field">
       <input type="file" id="shippingBinFile" accept="image/*" onchange="previewShippingBin(event,'${o.OrderID}')">
     </div>
+    <button class="btn btn-outline btn-sm btn-block" style="margin-top:8px;" onclick="printShippingLabelWindow(ORDERS_CACHE.find(x=>x.OrderID==='${o.OrderID}'))">🏷️ ພິມບິນຈັດສົ່ງ</button>
   `;
   document.getElementById('orderDetailModal').classList.remove('hide');
 }
@@ -1675,6 +1677,76 @@ function printInvoiceWindow(order){
     <p class="right">ລວມຍ່ອຍ: ${fmt(order.Subtotal)} ₭<br>ຄ່າຂົນສົ່ງ: ${fmt(order.ShippingFee)} ₭<br>ສ່ວນຫຼຸດ: ${fmt(order.Discount)} ₭<br><b>ລວມທັງໝົດ: ${fmt(order.Total)} ₭</b></p>
     <hr>
     <p class="muted"><b>${s.bankName||''}</b> — ${s.bankAccountName||''} — ${s.bankAccountNumber||''}<br>ຕິດຕໍ່: ${s.contactPhone||''}</p>
+    <script>window.print()<\/script>
+    </body></html>`);
+  win.document.close();
+}
+
+function extractBranchFromNote(note){
+  if(!note) return '';
+  const m = String(note).match(/\[ສາຂາ\/ຈຸດຮັບ:\s*([^\]]+)\]/);
+  return m ? m[1].trim() : '';
+}
+
+function printShippingLabelWindow(order){
+  if(!order) return;
+  const s = DATA.settings;
+  const items = order.Items || [];
+  const branch = extractBranchFromNote(order.Note) || order.ShippingCompany || '-';
+  const win = window.open('','_blank');
+  win.document.write(`
+    <html><head><title>ບິນຈັດສົ່ງ ${order.OrderID}</title>
+    <style>
+      body{font-family:'Noto Sans Lao',sans-serif;margin:0;padding:0;color:#16211D;}
+      .label-wrap{max-width:420px;margin:0 auto;border:1px solid #ddd;}
+      .ship-header{background:#146356;color:#fff;padding:16px;}
+      .ship-header h2{margin:0;font-size:20px;}
+      .ship-header .sub{font-size:12px;margin-top:6px;opacity:.9;}
+      .ship-meta{display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px dashed #ccc;font-size:12px;}
+      .ship-parties{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px dashed #ccc;}
+      .party{font-size:13px;}
+      .party b{font-size:14px;}
+      .arrow{font-size:18px;color:#146356;}
+      .logo-wrap{text-align:center;padding:16px;}
+      .logo-wrap img{height:70px;border-radius:50%;}
+      .store-name{text-align:center;font-size:18px;font-weight:800;margin-top:4px;}
+      .store-info{text-align:center;font-size:12px;color:#666;margin-bottom:10px;}
+      table{width:100%;border-collapse:collapse;margin-top:10px;}
+      th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;text-align:left;}
+      .right{text-align:right;}
+      .totalrow{font-weight:800;font-size:14px;}
+      .orderid-row{display:flex;justify-content:space-between;padding:4px 16px;font-size:13px;}
+    </style></head><body>
+    <div class="label-wrap">
+      <div class="ship-header">
+        <h2>${branch}</h2>
+        <div class="sub">${s.addressText||''} · ${s.contactPhone||''}</div>
+      </div>
+      <div class="ship-meta">
+        <div>ໂທສາຍດ່ວນ: ${s.contactPhone||'-'}</div>
+        <div>ວັນທີພິມບິນ: ${new Date().toLocaleString('lo-LA')}</div>
+      </div>
+      <div class="ship-parties">
+        <div class="party">ຜູ້ຝາກ<br><b>${s.storeName||'LAO SHOP'}</b><br>${s.contactPhone||''}</div>
+        <div class="arrow">→</div>
+        <div class="party" style="text-align:right;">ຜູ້ຮັບ<br><b>${order.CustomerName}</b><br>${order.Phone}</div>
+      </div>
+      <div class="logo-wrap">
+        ${s.logoUrl?`<img src="${s.logoUrl}">`:''}
+        <div class="store-name">${s.storeName||'LAO SHOP'}</div>
+        <div class="store-info">${s.contactPhone||''} · ${s.addressText||''}</div>
+      </div>
+      <div class="orderid-row"><span>ເລກທີອໍເດີ</span><b>${order.OrderID}</b></div>
+      <div style="padding:0 16px 12px;">
+        <table>
+          <thead><tr><th>ສິນຄ້າ</th><th>ຈຳນວນ</th><th class="right">ລາຄາ</th></tr></thead>
+          <tbody>${items.map(i=>`<tr><td>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')}</td><td>${i.Qty}</td><td class="right">${fmt(i.LineTotal)} ₭</td></tr>`).join('')}</tbody>
+        </table>
+        <div class="orderid-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(order.Subtotal)} ₭</span></div>
+        <div class="orderid-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(order.ShippingFee)} ₭</span></div>
+        <div class="orderid-row totalrow"><span>ລວມທັງໝົດ</span><span>${fmt(order.Total)} ₭</span></div>
+      </div>
+    </div>
     <script>window.print()<\/script>
     </body></html>`);
   win.document.close();
