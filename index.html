@@ -305,6 +305,22 @@ a{color:inherit;text-decoration:none;}
 .chip-delivered{background:#DFF6E1;color:#1E7A32;}
 .chip-completed{background:#DFF6E1;color:#1E7A32;}
 .chip-cancelled{background:#FBDCDC;color:#B3231F;}
+.order-stepper{display:flex;align-items:flex-start;justify-content:space-between;margin:14px 0 6px;padding:0 2px;}
+.order-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.order-step .dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--bg);border:2px solid var(--border);color:var(--text-muted);z-index:2;transition:all .3s;}
+.order-step .lbl{font-size:10px;color:var(--text-muted);margin-top:6px;text-align:center;font-weight:600;max-width:60px;line-height:1.2;}
+.order-step .line{position:absolute;top:16px;left:-50%;width:100%;height:2px;background:var(--border);z-index:1;}
+.order-step:first-child .line{display:none;}
+.order-step.done .dot{background:var(--primary);border-color:var(--primary);color:#fff;}
+.order-step.done .line{background:var(--primary);}
+.order-step.done .lbl{color:var(--primary);}
+.order-step.active .dot{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 0 rgba(212,166,87,.6);animation:stepPulse 1.4s infinite;}
+.order-step.active .lbl{color:var(--accent-dark);font-weight:800;}
+@keyframes stepPulse{
+  0%{box-shadow:0 0 0 0 rgba(212,166,87,.55);}
+  70%{box-shadow:0 0 0 10px rgba(212,166,87,0);}
+  100%{box-shadow:0 0 0 0 rgba(212,166,87,0);}
+}
 
 /* ---------- CART ---------- */
 .cart-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
@@ -596,6 +612,16 @@ table tr:hover td{background:var(--primary-light);}
       <button class="btn btn-primary btn-sm" onclick="trackOrders()">ຄົ້ນຫາ</button>
     </div>
     <div id="myOrdersList"></div>
+  </div>
+</div>
+
+<div class="modal-center-wrap hide" id="publicOrderDetailModal" onclick="if(event.target===this)closePublicOrderDetail()">
+  <div class="modal-center" style="max-width:400px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h3 style="margin:0;font-family:var(--font-display);">📦 ລາຍລະອຽດອໍເດີ</h3>
+      <button class="close-x" onclick="closePublicOrderDetail()">✕</button>
+    </div>
+    <div id="publicOrderDetailBody"></div>
   </div>
 </div>
 
@@ -1248,20 +1274,71 @@ function trackOrders(){
   trackPollTimer = setInterval(()=>{
     if(!document.getElementById('myOrdersSheet').classList.contains('show')){ clearInterval(trackPollTimer); return; }
     doTrackFetch(phone, true);
-  }, 6000);
+  }, 3000);
 }
+let MY_ORDERS_CACHE = [];
+const PUBLIC_STEPS = [
+  {key:'Pending',   label:'ຮັບອໍເດີ',   icon:'🕐'},
+  {key:'Paid',      label:'ຢືນຢັນ',     icon:'✅'},
+  {key:'Preparing', label:'ກຳລັງກຽມ',   icon:'👨‍🍳'},
+  {key:'Shipping',  label:'ກຳລັງສົ່ງ',  icon:'🚚'},
+  {key:'Completed', label:'ສຳເລັດ',     icon:'🎉'}
+];
+const STEP_INDEX = {Pending:0, Paid:1, Preparing:2, Packing:2, Shipping:3, Delivered:3, Completed:4};
+
+function renderOrderStepper(status){
+  if(status === 'Cancelled'){
+    return `<div style="text-align:center;padding:8px 0;color:var(--danger);font-weight:700;font-size:13px;">❌ ອໍເດີນີ້ຖືກຍົກເລີກແລ້ວ</div>`;
+  }
+  const curIdx = STEP_INDEX[status] ?? 0;
+  return `<div class="order-stepper">
+    ${PUBLIC_STEPS.map((s,i)=>`
+      <div class="order-step ${i<curIdx?'done':''} ${i===curIdx?'active':''}">
+        <div class="line"></div>
+        <div class="dot">${i<=curIdx ? s.icon : (i+1)}</div>
+        <div class="lbl">${s.label}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
 function doTrackFetch(phone, silent){
   gsRun('publicTrackByPhone', phone).then(orders=>{
+    MY_ORDERS_CACHE = orders;
     const list = document.getElementById('myOrdersList');
     if(!orders.length){ list.innerHTML = `<div class="empty-state"><div class="ic">📭</div>ບໍ່ພົບອໍເດີສຳລັບເບີນີ້</div>`; return; }
     list.innerHTML = orders.map(o=>`
       <div class="panel">
         <div style="display:flex;justify-content:space-between;"><b>${o.OrderID}</b><span class="chip chip-${(o.Status||'').toLowerCase()}">${o.Status}</span></div>
+        ${renderOrderStepper(o.Status)}
         <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">ຍອດລວມ: ${fmt(o.Total)} ₭ · Tracking: ${o.TrackingNumber||'-'}</div>
         ${o.ShippingBin?`<div style="margin-top:8px;"><img src="${o.ShippingBin}" onerror="this.style.display='none'" onclick="viewImageLightbox('${o.ShippingBin}')" style="width:90px;border-radius:8px;cursor:pointer;"><div style="font-size:11px;color:var(--primary);margin-top:2px;">📦 ເບິ່ງບິນຈັດສົ່ງ</div></div>`:''}
+        <button class="btn btn-outline btn-sm btn-block" style="margin-top:10px;" onclick="openPublicOrderDetail('${o.OrderID}')">📦 ລາຍລະອຽດອໍເດີ</button>
       </div>`).join('');
   }).catch(()=>{ if(!silent) toast('ບໍ່ສາມາດຄົ້ນຫາໄດ້','error'); });
 }
+
+function openPublicOrderDetail(orderId){
+  const o = MY_ORDERS_CACHE.find(x=>x.OrderID===orderId);
+  if(!o) return;
+  document.getElementById('publicOrderDetailBody').innerHTML = `
+    <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b style="color:var(--primary);">${o.OrderID}</b></div>
+    <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
+    ${renderOrderStepper(o.Status)}
+    <h4 style="margin:14px 0 8px;">ລາຍການສິນຄ້າ</h4>
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('') || '<div style="font-size:12px;color:var(--text-muted);">-</div>'}
+    <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
+    <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
+    <div class="cart-summary-row"><span>ສ່ວນຫຼຸດ</span><span>-${fmt(o.Discount)} ₭</span></div>
+    <div class="cart-summary-row total"><span>ຍອດລວມ</span><span>${fmt(o.Total)} ₭</span></div>
+    <h4 style="margin:14px 0 8px;">ຈັດສົ່ງ</h4>
+    <div class="cart-summary-row"><span>ບໍລິສັດຂົນສົ່ງ</span><span>${o.ShippingCompany||'-'}</span></div>
+    <div class="cart-summary-row"><span>Tracking</span><span>${o.TrackingNumber||'-'}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', ')}</span></div>
+    ${o.ShippingBin?`<div style="margin-top:8px;"><img src="${o.ShippingBin}" onclick="viewImageLightbox('${o.ShippingBin}')" style="width:110px;border-radius:10px;cursor:pointer;"></div>`:''}
+  `;
+  document.getElementById('publicOrderDetailModal').classList.remove('hide');
+}
+function closePublicOrderDetail(){ document.getElementById('publicOrderDetailModal').classList.add('hide'); }
 
 /* ============================================================
    NAV / UI HELPERS
