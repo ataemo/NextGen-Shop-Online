@@ -1370,21 +1370,34 @@ function openAdminTab(tab){
   renderAdminNav();
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
-  content.innerHTML = adminTabCache[tab] || `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div>`;
+
+  // ຖ້າມີ cache ຢູ່ແລ້ວ ໃຫ້ສະແດງທັນທີ (ບໍ່ຕ້ອງລໍ)
+  content.innerHTML = adminTabCache[tab] || `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
+
   const renderers = {
     dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
     categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
     customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
     analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
   };
-  (renderers[tab]||function(){})();
+
+  try {
+    Promise.resolve((renderers[tab]||function(){})())
+      .catch(err=>{
+        content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger);">
+          ⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ: ${err && err.message ? err.message : 'Unknown error'}
+          <br><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button>
+        </div>`;
+      });
+  } catch(e){}
+
   setTimeout(()=>{ adminTabCache[tab] = document.getElementById('adminContent').innerHTML; }, 800);
 }
 function adminCall(fn, ...args){
   return gsRun(fn, STATE.adminToken, ...args).catch(err=>{
     if(String(err.message).includes('SESSION_EXPIRED')){ toast('ໝົດເວລາເຂົ້າສູ່ລະບົບ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່','error'); doAdminLogout(); }
     else toast(err.message,'error');
-    throw err;
+    throw err;   // ← ອັນນີ້ຕ້ອງມີຢູ່ແລ້ວ (ມີແລ້ວໃນໂຄ້ດເດີມ, ບໍ່ຕ້ອງແກ້)
   });
 }
 
