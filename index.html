@@ -662,15 +662,23 @@ table tr:hover td{background:var(--primary-light);}
 const API_URL = 'https://script.google.com/macros/s/AKfycbw-sy893DtMZFf_L1ny65Hu5pywL9YvueTUYmr0TL1BXOfjQc879bo_ZKZM8IGRoG8eIQ/exec';
 
 async function gsRun(fnName, ...args){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), 20000); // ຢຸດອັດຕະໂນມັດຫຼັງ 20 ວິນາທີ
   let res;
   try {
     res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ fn: fnName, args })
+      body: JSON.stringify({ fn: fnName, args }),
+      signal: controller.signal
     });
   } catch (networkErr) {
+    if(networkErr.name === 'AbortError'){
+      throw new Error('ໝົດເວລາລໍຖ້າ Server (20 ວິນາທີ) — Server ອາດຈະຊ້າ ຫຼື ຂໍ້ມູນໃນ Sheet ໃຫຍ່ເກີນໄປ');
+    }
     throw new Error('ບໍ່ສາມາດເຊື່ອມຕໍ່ Server ໄດ້ (ກວດສອບອິນເຕີເນັດ ຫຼື API_URL): ' + networkErr.message);
+  } finally {
+    clearTimeout(timeoutId);
   }
   if (!res.ok) {
     throw new Error('HTTP ' + res.status + ' — Server ຕອບກັບຜິດພາດ');
