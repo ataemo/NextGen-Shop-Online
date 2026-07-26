@@ -1371,6 +1371,11 @@ function renderAdminNav(){
     </button>`).join('');
 }
 let adminTabCache = {};
+try {
+  const savedAdminCache = localStorage.getItem('lao_admin_tab_cache');
+  if(savedAdminCache) adminTabCache = JSON.parse(savedAdminCache);
+} catch(e){}
+
 function openAdminTab(tab){
   stopOrdersAutoRefresh();
   STATE.adminTab = tab;
@@ -1399,7 +1404,10 @@ function openAdminTab(tab){
       });
   } catch(e){}
 
-  setTimeout(()=>{ adminTabCache[tab] = document.getElementById('adminContent').innerHTML; }, 800);
+  setTimeout(()=>{
+    adminTabCache[tab] = document.getElementById('adminContent').innerHTML;
+    try{ localStorage.setItem('lao_admin_tab_cache', JSON.stringify(adminTabCache)); }catch(e){}
+  }, 800);
 }
 function adminCall(fn, ...args){
   return gsRun(fn, STATE.adminToken, ...args).catch(err=>{
