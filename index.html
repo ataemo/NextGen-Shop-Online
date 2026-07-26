@@ -1176,7 +1176,6 @@ function placeOrder(){
     document.getElementById('successOrderId').textContent = res.orderId;
     document.getElementById('successModal').classList.remove('hide');
     btn.disabled=false; btn.textContent='ຢືນຢັນສັ່ງຊື້';
-    // *** ເພີ່ມ: ຖ້າ Backend ແຈ້ງວ່າສະລິບອັບໂຫຼດບໍ່ສຳເລັດ (ອໍເດີຍັງບັນທຶກປົກກະຕິ) ໃຫ້ແຈ້ງເຕືອນລູກຄ້າ ***
     if(res.slipUploadWarning){ toast(res.slipUploadWarning, 'error'); }
     gsRun('getInitData').then(d=>{ DATA=d; renderProducts(); });
   }).catch(err=>{
