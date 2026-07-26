@@ -650,21 +650,9 @@ table tr:hover td{background:var(--primary-light);}
 <script>
 /* ============================================================
    API CONNECTION — Google Apps Script Web App (deployed as "Anyone")
-   ໜ້ານີ້ຖືກ Host ແຍກຕ່າງຫາກ (ຕົວຢ່າງ: GitHub Pages) ແລະຄຸຍກັບ Backend
-   ຜ່ານ fetch() ໄປຫາ URL ຂອງ Web App (…/exec) ດ້ານລຸ່ມ.
-
-   ສຳຄັນ: ທຸກຄັ້ງທີ່ Deploy ເວີຊັນໃໝ່ຂອງ Code.gs (Manage deployments > Edit >
-   New version) ຖ້າ URL ປ່ຽນ ໃຫ້ອັບເດດຄ່ານີ້ນຳ.
    ============================================================ */
 const API_URL = 'https://script.google.com/macros/s/AKfycbw-sy893DtMZFf_L1ny65Hu5pywL9YvueTUYmr0TL1BXOfjQc879bo_ZKZM8IGRoG8eIQ/exec';
 
-/**
- * gsRun(fnName, ...args) — ຮຽກຟັງຊັນຝັ່ງ Backend (Code.gs) ຜ່ານ fetch()
- * ໃຊ້ Content-Type: text/plain ເພື່ອໃຫ້ browser ຖືວ່າເປັນ "simple request"
- * (ບໍ່ຕ້ອງສົ່ງ CORS preflight OPTIONS ກ່ອນ ເຊິ່ງ Apps Script Web App ບໍ່ຮອງຮັບ)
- * ຄືນຄ່າເປັນ Promise ຄືກັບ google.script.run ເດີມ ດັ່ງນັ້ນໂຄ້ດທີ່ຮຽກໃຊ້ gsRun()
- * ຢູ່ບ່ອນອື່ນໃນໄຟລ໌ນີ້ບໍ່ຕ້ອງແກ້ໄຂຫຍັງເພີ່ມ.
- */
 async function gsRun(fnName, ...args){
   let res;
   try {
@@ -732,11 +720,9 @@ function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
   renderProvinceOptions();
 
-  // ສະແດງໜ້າຮ້ານທັນທີ ບໍ່ຕ້ອງລໍ Loader
   document.getElementById('loader').classList.add('hide');
   document.getElementById('storefront').classList.remove('hide');
 
-  // ຖ້າມີຂໍ້ມູນ Cache ຈາກການເຂົ້າຊົມຄັ້ງກ່ອນ ໃຫ້ສະແດງທັນທີ ໂດຍບໍ່ຕ້ອງລໍ Server
   if(DATA.products && DATA.products.length){
     applySettingsToUI();
     renderHero();
@@ -747,17 +733,8 @@ function init(){
     updateCartBadge();
   }
 
-  // ແກ້ໄຂ: ບໍ່ວ່າຈະເຄີຍ Login Admin ໄວ້ ຫຼື ບໍ່ກໍ່ຕາມ, ທຸກຄັ້ງທີ່ເປີດ/ຣີເຟຣັດລະບົບ
-  // ໃຫ້ໂຫຼດ ແລະ ສະແດງໜ້າຮ້ານ (Storefront) ເປັນຄ່າເລີ່ມຕົ້ນສະເໝີ. ນອກຈາກຈະແກ້ບັນຫາ
-  // "ຣີເຟຣັດແລ້ວຕິດຄ້າງຢູ່ໜ້າ Admin" ແລ້ວ, ຍັງແກ້ບັນຫາ "ກັບໄປໜ້າຮ້ານແລ້ວຂໍ້ມູນຫາຍ"
-  // ນຳ ເພາະ Storefront ຈະຖືກ Render ຄົບທຸກອົງປະກອບ (Hero, Categories, Products, ...)
-  // ໄວ້ລ່ວງໜ້າສະເໝີ ບໍ່ວ່າຈະຢູ່ໃນ Admin ຫຼືບໍ່.
   loadStorefront();
 
-  // ຖ້າມີ Token Admin ເກົ່າຢູ່ໃນເຄື່ອງ ໃຫ້ກວດສອບຄວາມຖືກຕ້ອງແບບບໍ່ລົບກວນໜ້າຈໍ (ດ້ານຫຼັງ)
-  // ຖ້າ Session ໝົດອາຍຸ/ບໍ່ຖືກຕ້ອງ ໃຫ້ລຶບ Token ອອກ ເພື່ອບັງຄັບໃຫ້ Login ໃໝ່ໃນຄັ້ງຕໍ່ໄປ.
-  // ຖ້າຍັງໃຊ້ໄດ້ຢູ່ ຈະບໍ່ພາໄປໜ້າ Admin ໂດຍອັດຕະໂນມັດ — ຕ້ອງກົດ "Admin Panel" ເອງ
-  // (ຄັ້ງນີ້ຈະເຂົ້າ Admin ໄດ້ທັນທີ ບໍ່ຕ້ອງໃສ່ລະຫັດຜ່ານຄືນ ເພາະ Token ຍັງບໍ່ໝົດອາຍຸ).
   if(STATE.adminToken){
     gsRun('adminGetSettings', STATE.adminToken).catch(err=>{
       if(String(err.message).includes('SESSION_EXPIRED')){
@@ -768,8 +745,6 @@ function init(){
         localStorage.removeItem('lao_admin_role');
         localStorage.removeItem('lao_admin_name');
       }
-      // ຖ້າເປັນຂໍ້ຜິດພາດອື່ນ (ເຊັ່ນ Network ຂາດຊົ່ວຄາວ) ຈະບໍ່ລຶບ Token ອອກ
-      // ເພື່ອບໍ່ໃຫ້ຕ້ອງ Login ໃໝ່ທຸກຄັ້ງທີ່ອິນເຕີເນັດມີບັນຫາຊົ່ວຄາວ.
     });
   }
 }
@@ -804,7 +779,7 @@ function silentRefreshData(){
     updateCartBadge();
   }).catch(()=>{ /* ຖ້າຜິດພາດຊົ່ວຄາວ ບໍ່ຕ້ອງລົບກວນຜູ້ໃຊ້ */ });
 }
-setInterval(silentRefreshData, 15000); // ອັບເດດທຸກ 15 ວິນາທີ
+setInterval(silentRefreshData, 15000);
 
 function applySettingsToUI(){
   const s = DATA.settings;
@@ -847,7 +822,7 @@ function renderPromoTicker(){
   const items = raw.split('|').map(s=>s.trim()).filter(Boolean);
   if(!items.length){ wrap.classList.add('hide'); return; }
   const html = items.map(t=>`<span class="item"><span class="dot">✦</span>${t}</span>`).join('');
-  document.getElementById('promoTickerTrack').innerHTML = html + html; // ຊ້ຳ 2 ຮອບ ເພື່ອໃຫ້ວົນລື່ນໆບໍ່ສະດຸດ
+  document.getElementById('promoTickerTrack').innerHTML = html + html;
   wrap.classList.remove('hide');
 }
 
@@ -1094,7 +1069,7 @@ function applyCoupon(){
 /* ============================================================
    CHECKOUT
    ============================================================ */
-const LAO_DAYS = ['ອາທິດ','ຈັນ','ອັງຄານ','ພຸດ','ພະຫັດ','ສຸກ','ເສົາ']; // ກົງກັບ getDay() 0-6
+const LAO_DAYS = ['ອາທິດ','ຈັນ','ອັງຄານ','ພຸດ','ພະຫັດ','ສຸກ','ເສົາ'];
 
 function isShippingClosedToday(s){
   if(!s.DaysOff) return false;
@@ -1107,7 +1082,6 @@ function renderShipMethods(){
   if(!grid || !DATA.shipping) return;
   if(!DATA.shipping.length){ grid.innerHTML=''; return; }
 
-  // ຖ້າຕົວທີ່ເລືອກຢູ່ປິດມື້ນີ້ ຫຼື ຍັງບໍ່ໄດ້ເລືອກ → ຫາຕົວທຳອິດທີ່ຍັງເປີດ
   const openOnes = DATA.shipping.filter(s=>!isShippingClosedToday(s));
   if(!STATE.checkoutShipping || !DATA.shipping.find(s=>s.Name===STATE.checkoutShipping) || isShippingClosedToday(DATA.shipping.find(s=>s.Name===STATE.checkoutShipping))){
     STATE.checkoutShipping = (openOnes[0] || DATA.shipping[0]).Name;
@@ -1202,6 +1176,8 @@ function placeOrder(){
     document.getElementById('successOrderId').textContent = res.orderId;
     document.getElementById('successModal').classList.remove('hide');
     btn.disabled=false; btn.textContent='ຢືນຢັນສັ່ງຊື້';
+    // *** ເພີ່ມ: ຖ້າ Backend ແຈ້ງວ່າສະລິບອັບໂຫຼດບໍ່ສຳເລັດ (ອໍເດີຍັງບັນທຶກປົກກະຕິ) ໃຫ້ແຈ້ງເຕືອນລູກຄ້າ ***
+    if(res.slipUploadWarning){ toast(res.slipUploadWarning, 'error'); }
     gsRun('getInitData').then(d=>{ DATA=d; renderProducts(); });
   }).catch(err=>{
     toast('ເກີດຂໍ້ຜິດພາດ: '+err.message,'error');
@@ -1336,9 +1312,6 @@ function doAdminLogout(){
 function backToStore(){
   document.getElementById('adminShell').classList.add('hide');
   document.getElementById('storefront').classList.remove('hide');
-  // ແກ້ໄຂ: ໂຫຼດ ແລະ Render ຂໍ້ມູນໜ້າຮ້ານຄືນໃໝ່ທຸກຄັ້ງທີ່ກັບຈາກ Admin
-  // (ເຊັ່ນ: ຖ້າມີການແກ້ໄຂສິນຄ້າ/ໝວດ/Banner/ຕັ້ງຄ່າ ຢູ່ໃນ Admin) ເພື່ອບໍ່ໃຫ້ໜ້າຮ້ານ
-  // ສະແດງຂໍ້ມູນເກົ່າ ຫຼື ຫວ່າງເປົ່າ.
   gsRun('getInitData').then(d=>{
     DATA = d;
     applySettingsToUI();
