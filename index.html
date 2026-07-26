@@ -1376,6 +1376,24 @@ try {
   if(savedAdminCache) adminTabCache = JSON.parse(savedAdminCache);
 } catch(e){}
 
+function scheduleAdminCacheSave(tab){
+  let attempts = 0;
+  const trySave = ()=>{
+    attempts++;
+    const el = document.getElementById('adminContent');
+    if(!el) return;
+    const html = el.innerHTML;
+    // ຖ້າຍັງສະແດງ "ກຳລັງໂຫຼດ" ຫຼື ຂໍ້ຄວາມ Error ຢູ່ ແປວ່າຍັງໂຫຼດບໍ່ສຳເລັດ ຢ່າຫາກໍ່ບັນທຶກ cache
+    const stillLoading = html.includes('ກຳລັງໂຫຼດ') || html.includes('ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ');
+    if(stillLoading && attempts < 20){ setTimeout(trySave, 500); return; }
+    if(!stillLoading){
+      adminTabCache[tab] = html;
+      try{ localStorage.setItem('lao_admin_tab_cache', JSON.stringify(adminTabCache)); }catch(e){}
+    }
+  };
+  setTimeout(trySave, 500);
+}
+
 function openAdminTab(tab){
   stopOrdersAutoRefresh();
   STATE.adminTab = tab;
@@ -1404,10 +1422,7 @@ function openAdminTab(tab){
       });
   } catch(e){}
 
-  setTimeout(()=>{
-    adminTabCache[tab] = document.getElementById('adminContent').innerHTML;
-    try{ localStorage.setItem('lao_admin_tab_cache', JSON.stringify(adminTabCache)); }catch(e){}
-  }, 800);
+  scheduleAdminCacheSave(tab);
 }
 function adminCall(fn, ...args){
   return gsRun(fn, STATE.adminToken, ...args).catch(err=>{
