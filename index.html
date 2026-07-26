@@ -1717,10 +1717,17 @@ function printShippingLabelWindow(order){
       .totalrow{font-weight:800;font-size:14px;}
       .orderid-row{display:flex;justify-content:space-between;padding:4px 16px;font-size:13px;}
     </style></head><body>
-    <div class="label-wrap">
-      <div class="ship-header">
-        <h2>${branch}</h2>
-        <div class="sub">${s.addressText||''} · ${s.contactPhone||''}</div>
+    <div class="ship-header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div>
+            <h2>${order.ShippingCompany || '-'}</h2>
+            <div class="sub" style="text-align:left;margin-top:2px;">ບໍລິສັດຂົນສົ່ງ</div>
+          </div>
+          <div style="text-align:right;">
+            <h2 style="font-size:16px;">${branch || '-'}</h2>
+            <div class="sub" style="text-align:right;margin-top:2px;">${[order.Village, order.District, order.Province].filter(Boolean).join(', ') || '-'}</div>
+          </div>
+        </div>
       </div>
       <div class="ship-meta">
         <div>ໂທສາຍດ່ວນ: ${s.contactPhone||'-'}</div>
