@@ -1481,6 +1481,16 @@ function renderAdminOrders(){
           <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="doPrintOrder()">🖨️ ພິມບິນ</button>
         </div>
       </div>
+      <div class="modal-center-wrap hide" id="shippingLabelModal">
+        <div class="modal-center" style="max-width:460px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;font-family:var(--font-display);">🏷️ ຕົວຢ່າງບິນຈັດສົ່ງ</h3>
+            <button class="close-x" onclick="closeShippingLabelPreview()">✕</button>
+          </div>
+          <div id="shippingLabelBody"></div>
+          <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="doPrintShippingLabel()">🖨️ ພິມບິນຈັດສົ່ງ</button>
+        </div>
+      </div>
     `;
     renderOrderFilterTabs();
     renderOrdersTable();
@@ -1525,7 +1535,7 @@ function renderOrdersTable(){
       <td>
         <button class="mini-btn" title="ເບິ່ງລາຍລະອຽດ" onclick="openOrderDetail('${o.OrderID}')">👁️</button>
         <button class="mini-btn" title="ພິມໃບບິນ" onclick="openPrintPreview('${o.OrderID}')">🖨️</button>
-        <button class="mini-btn" title="ພິມບິນຈັດສົ່ງ" onclick="printShippingLabelWindow(ORDERS_CACHE.find(x=>x.OrderID==='${o.OrderID}'))">🏷️</button>
+        <button class="mini-btn" title="ພິມບິນຈັດສົ່ງ" onclick="openShippingLabelPreview('${o.OrderID}')">🏷️</button>
         <button class="mini-btn" title="ລຶບ" onclick="deleteOrderAdmin('${o.OrderID}')">🗑️</button>
       </td>
     </tr>`).join('');
@@ -1574,7 +1584,7 @@ function openOrderDetail(orderId){
     <div class="field">
       <input type="file" id="shippingBinFile" accept="image/*" onchange="previewShippingBin(event,'${o.OrderID}')">
     </div>
-    <button class="btn btn-outline btn-sm btn-block" style="margin-top:8px;" onclick="printShippingLabelWindow(ORDERS_CACHE.find(x=>x.OrderID==='${o.OrderID}'))">🏷️ ພິມບິນຈັດສົ່ງ</button>
+    <button class="btn btn-outline btn-sm btn-block" style="margin-top:8px;" onclick="openShippingLabelPreview('${o.OrderID}')">🏷️ ພິມບິນຈັດສົ່ງ</button>
   `;
   document.getElementById('orderDetailModal').classList.remove('hide');
 }
@@ -1637,7 +1647,7 @@ function openPrintPreview(orderId){
     <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b>${o.OrderID}</b></div>
     <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
     <div class="cart-summary-row"><span>ລູກຄ້າ</span><span>${o.CustomerName} | ${o.Phone}</span></div>
-    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;">${o.Address}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', ')}</span></div>
     <hr style="border:none;border-top:1px solid var(--border);">
     ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
     <hr style="border:none;border-top:1px solid var(--border);">
@@ -1653,6 +1663,38 @@ function openPrintPreview(orderId){
 }
 function closeOrderPrint(){ document.getElementById('orderPrintModal').classList.add('hide'); }
 function doPrintOrder(){ if(printOrderCache) printInvoiceWindow(printOrderCache); }
+
+function openShippingLabelPreview(orderId){
+  const o = ORDERS_CACHE.find(x=>x.OrderID===orderId);
+  if(!o) return;
+  printOrderCache = o;
+  const s = DATA.settings;
+  const branch = extractBranchFromNote(o.Note) || o.ShippingCompany || '-';
+  const fullAddress = [o.Address, o.Village, o.District, o.Province].filter(Boolean).join(', ');
+  document.getElementById('shippingLabelBody').innerHTML = `
+    <div style="text-align:center;margin-bottom:10px;">
+      ${s.logoUrl?`<img src="${s.logoUrl}" style="height:50px;margin-bottom:6px;">`:''}
+      <h3 style="margin:4px 0;">${s.storeName||'LAO SHOP'}</h3>
+      <div style="font-size:12px;color:var(--text-muted);">${s.contactPhone||''} · ${s.addressText||''}</div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);">
+    <div class="cart-summary-row"><span>ບໍລິສັດຂົນສົ່ງ</span><b>${o.ShippingCompany||'-'}</b></div>
+    <div class="cart-summary-row"><span>ສາຂາ/ຈຸດຮັບ</span><b>${branch}</b></div>
+    <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b>${o.OrderID}</b></div>
+    <hr style="border:none;border-top:1px solid var(--border);">
+    <div class="cart-summary-row"><span>ຜູ້ຮັບ</span><span>${o.CustomerName} | ${o.Phone}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${fullAddress}</span></div>
+    <hr style="border:none;border-top:1px solid var(--border);">
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
+    <hr style="border:none;border-top:1px solid var(--border);">
+    <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
+    <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
+    <div class="cart-summary-row total"><span>ລວມທັງໝົດ</span><span>${fmt(o.Total)} ₭</span></div>
+  `;
+  document.getElementById('shippingLabelModal').classList.remove('hide');
+}
+function closeShippingLabelPreview(){ document.getElementById('shippingLabelModal').classList.add('hide'); }
+function doPrintShippingLabel(){ if(printOrderCache) printShippingLabelWindow(printOrderCache); }
 
 function printInvoiceWindow(order){
   const s = DATA.settings;
