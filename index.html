@@ -286,8 +286,8 @@ a{color:inherit;text-decoration:none;}
 .pd-imgwrap img{width:100%;height:100%;object-fit:cover;}
 .pd-nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:3;backdrop-filter:blur(4px);}
 .pd-nav-btn:active{background:rgba(0,0,0,.55);}
-.pd-nav-prev{left:8px;}
-.pd-nav-next{right:8px;}
+.pd-nav-prev{top:8px;left:50%;transform:translateX(-50%);}
+.pd-nav-next{bottom:8px;left:50%;transform:translateX(-50%);}
 .pd-nav-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.35);color:#fff;font-size:10px;padding:3px 10px;border-radius:20px;z-index:3;}
 
 /* ---------- FORM ELEMENTS ---------- */
@@ -1163,14 +1163,14 @@ function navigateProduct(delta){
   if(newIdx>=list.length) newIdx = 0;
   openProduct(list[newIdx], currentNavListKey);
 }
-let pdTouchStartX = 0;
+let pdTouchStartY = 0;
 function bindProductSwipe(){
   const wrap = document.getElementById('pdImgWrap');
   if(!wrap) return;
-  wrap.ontouchstart = (e)=>{ pdTouchStartX = e.touches[0].clientX; };
+  wrap.ontouchstart = (e)=>{ pdTouchStartY = e.touches[0].clientY; };
   wrap.ontouchend = (e)=>{
-    const dx = e.changedTouches[0].clientX - pdTouchStartX;
-    if(Math.abs(dx) > 50){ dx>0 ? navigateProduct(-1) : navigateProduct(1); }
+    const dy = e.changedTouches[0].clientY - pdTouchStartY;
+    if(Math.abs(dy) > 50){ dy>0 ? navigateProduct(-1) : navigateProduct(1); }
   };
 }
 function openProduct(id, listKey){
@@ -1188,9 +1188,9 @@ function openProduct(id, listKey){
     ${flash ? `<div class="pd-flash-banner">⚡ Flash Sale ໝົດເວລາໃນ <span id="pdFlashCountdown">--:--:--</span></div>` : ''}
     <div class="pd-imgwrap" id="pdImgWrap">
       ${images.length ? `<img id="mainProductImage" src="${images[0]}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:60px;">🛍️</span>`}
-      <button class="pd-nav-btn pd-nav-prev" onclick="navigateProduct(-1)">‹</button>
-      <button class="pd-nav-btn pd-nav-next" onclick="navigateProduct(1)">›</button>
-      <div class="pd-nav-hint">ເລື່ອນ ຫຼື ກົດລູກສອນ ເພື່ອເບິ່ງສິນຄ້າຕໍ່ໄປ</div>
+      <button class="pd-nav-btn pd-nav-prev" onclick="navigateProduct(-1)">▲</button>
+      <button class="pd-nav-btn pd-nav-next" onclick="navigateProduct(1)">▼</button>
+      <div class="pd-nav-hint">ປັດຂຶ້ນ/ລົງ ເພື່ອເບິ່ງສິນຄ້າຕໍ່ໄປ</div>
     </div>
     ${images.length>1?`<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;">
       ${images.map((img,idx)=>`<img src="${img}" onclick="document.getElementById('mainProductImage').src='${img}'" style="width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;border:2px solid ${idx===0?'var(--primary)':'transparent'};cursor:pointer;">`).join('')}
