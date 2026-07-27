@@ -1185,6 +1185,21 @@ function renderCategoryPageProducts(){
 /* ============================================================
    PRODUCTS
    ============================================================ */
+function computeStorefrontFeatured(list){
+  const s = DATA.settings;
+  const mode = s.featuredMode || 'auto';
+  const count = Number(s.featuredCount||6);
+  let out = [...list];
+  if(mode==='bestseller') out.sort((a,b)=>Number(b.Sold||0)-Number(a.Sold||0));
+  else if(mode==='bundle') out = out.filter(p=>Number(p.Discount||0)>0).sort((a,b)=>Number(b.Discount||0)-Number(a.Discount||0));
+  else if(mode==='promo') out = out.filter(p=>p.Badge || p.FlashSale==='Yes');
+  else if(mode==='custom'){
+    const ids = s.featuredCustomIds ? String(s.featuredCustomIds).split(',').filter(Boolean) : [];
+    out = ids.map(id=>DATA.products.find(p=>p.ID===id)).filter(Boolean);
+  } else out = out.filter(p=>p.Featured==='Yes');
+  if(!out.length) out = list;
+  return out.slice(0, count||6);
+}
 function renderProducts(){
   const search = (document.getElementById('searchInput').value||'').toLowerCase();
   let list = DATA.products.filter(p=>{
@@ -1195,11 +1210,9 @@ function renderProducts(){
 
   // ຖ້າຢູ່ໜ້າ "ສິນຄ້າແນະນຳ" (all + ບໍ່ໄດ້ຄົ້ນຫາ) ໃຫ້ສະແດງສະເພາະສິນຄ້າທີ່ແອັດມິນຕັ້ງເປັນ Featured
   if(STATE.activeCategory==='all' && !search){
-    const featured = list.filter(p=>p.Featured==='Yes');
-    if(featured.length) list = featured; // ຖ້າມີສິນຄ້າແນະນຳ ໃຫ້ໃຊ້ອັນນັ້ນ, ຖ້າບໍ່ມີເລີຍ ໃຫ້ສະແດງທັງໝົດຄືເກົ່າ
+    list = computeStorefrontFeatured(list);
   }
-
-  document.getElementById('prodTitle').textContent = STATE.activeCategory==='all' ? 'ສິນຄ້າແນະນຳ' : 'ຜົນການຄົ້ນຫາ';
+  document.getElementById('prodTitle').textContent = STATE.activeCategory==='all' ? (DATA.settings.featuredTitle||'ສິນຄ້າແນະນຳ') : 'ຜົນການຄົ້ນຫາ';
   NAV_LISTS.main = list.map(p=>p.ID);
   const grid = document.getElementById('productGrid');
   if(!list.length){ grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">📭</div>ບໍ່ພົບສິນຄ້າ</div>`; return; }
@@ -1725,6 +1738,7 @@ const ADMIN_MENU = [
   {id:'orders', label:'ອໍເດີ', ic:'📦', roles:['Administrator','Manager','Sales']},
   {id:'products', label:'ສິນຄ້າ', ic:'🛍️', roles:['Administrator','Manager','Warehouse']},
   {id:'flashsale', label:'⚡ Flash Sale', ic:'⚡', roles:['Administrator','Manager','Marketing']},
+  {id:'featured', label:'⭐ ສິນຄ້າແນະນຳ', ic:'⭐', roles:['Administrator','Manager','Marketing']},
   {id:'categories', label:'ໝວດໝູ່', ic:'🗂️', roles:['Administrator','Manager','Warehouse']},
   {id:'banners', label:'Banner', ic:'🖼️', roles:['Administrator','Manager','Marketing']},
   {id:'promotion', label:'ໂປຣໂມຊັ່ນ / ຄູປອງ', ic:'🎟️', roles:['Administrator','Manager','Marketing']},
@@ -1785,6 +1799,7 @@ function openAdminTab(tab){
   const renderers = {
     dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
     flashsale: renderAdminFlashSale,
+    featured: renderAdminFeatured,
     categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
     customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
     analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
@@ -2376,6 +2391,106 @@ function FLASH_PRODUCTS_CACHE_FIND(id){
     if(!p) return;
     p.FlashSale = 'No';
     adminCall('adminSaveProduct', p).then(()=>{ toast('ຢຸດແຄມເປນແລ້ວ'); renderAdminFlashSale(); });
+  });
+}
+
+/* ---------- ⭐ ສິນຄ້າແນະນຳ (Featured Products) ---------- */
+let FEATURED_STATE = { mode:'auto', title:'ສິນຄ້າແນະນຳ', count:6, customIds:[] };
+let FEATURED_PRODUCTS_CACHE = [];
+
+const FEATURED_MODES = [
+  {key:'auto', label:'⚡ Auto'},
+  {key:'bestseller', label:'🏆 ຂາຍດີ'},
+  {key:'bundle', label:'🔥 ຫຼຸດລາຄາ'},
+  {key:'promo', label:'📷 ໂປຣໂມ'},
+  {key:'custom', label:'🖐️ ກຳນົດເອງ'}
+];
+
+function renderAdminFeatured(){
+  return Promise.all([adminCall('adminGetSettings'), adminCall('adminGetProducts')]).then(([settings, products])=>{
+    FEATURED_PRODUCTS_CACHE = products;
+    FEATURED_STATE.mode = settings.featuredMode || 'auto';
+    FEATURED_STATE.title = settings.featuredTitle || 'ສິນຄ້າແນະນຳ';
+    FEATURED_STATE.count = Number(settings.featuredCount || 6);
+    FEATURED_STATE.customIds = settings.featuredCustomIds ? String(settings.featuredCustomIds).split(',').filter(Boolean) : [];
+
+    document.getElementById('adminContent').innerHTML = `
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h4 style="margin:0;">⭐ ສິນຄ້າແນະນຳ</h4>
+          <button class="btn btn-primary btn-sm" onclick="saveFeaturedSettings()">💾 ບັນທຶກ</button>
+        </div>
+        <label style="font-size:12px;font-weight:700;color:var(--text-muted);">ຮູບແບບສະແດງ</label>
+        <div class="tag-input-row" id="featModeTabs" style="margin-top:8px;"></div>
+        <div class="row2">
+          <div class="field"><label>ຫົວຂໍ້</label><input id="featTitle" value="${FEATURED_STATE.title}"></div>
+          <div class="field"><label>ຈຳນວນສະແດງ</label><input id="featCount" type="number" value="${FEATURED_STATE.count}"></div>
+        </div>
+        <div id="featCustomBox"></div>
+        <h4 style="margin:18px 0 8px;">Preview</h4>
+        <div class="grid" id="featPreviewGrid"></div>
+      </div>`;
+
+    document.getElementById('featTitle').oninput = ()=>{ FEATURED_STATE.title = document.getElementById('featTitle').value; };
+    document.getElementById('featCount').oninput = ()=>{ FEATURED_STATE.count = Number(document.getElementById('featCount').value||6); renderFeaturedPreview(); };
+
+    renderFeatModeTabs();
+    renderFeaturedCustomBox();
+    renderFeaturedPreview();
+  });
+}
+function renderFeatModeTabs(){
+  document.getElementById('featModeTabs').innerHTML = FEATURED_MODES.map(m=>`
+    <button class="btn btn-sm ${FEATURED_STATE.mode===m.key?'btn-primary':'btn-outline'}" onclick="selectFeaturedMode('${m.key}')">${m.label}</button>
+  `).join('');
+}
+function selectFeaturedMode(key){
+  FEATURED_STATE.mode = key;
+  renderFeatModeTabs(); renderFeaturedCustomBox(); renderFeaturedPreview();
+}
+function renderFeaturedCustomBox(){
+  const box = document.getElementById('featCustomBox');
+  if(FEATURED_STATE.mode !== 'custom'){ box.innerHTML=''; return; }
+  box.innerHTML = `
+    <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin:14px 0 8px;">ເລືອກສິນຄ້າ:</label>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));">
+      ${FEATURED_PRODUCTS_CACHE.map(p=>`
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:10px;">
+          <input type="checkbox" value="${p.ID}" ${FEATURED_STATE.customIds.includes(p.ID)?'checked':''} onchange="toggleFeaturedCustom('${p.ID}', this.checked)">
+          ${p.Name}
+        </label>`).join('')}
+    </div>`;
+}
+function toggleFeaturedCustom(id, checked){
+  if(checked){ if(!FEATURED_STATE.customIds.includes(id)) FEATURED_STATE.customIds.push(id); }
+  else FEATURED_STATE.customIds = FEATURED_STATE.customIds.filter(x=>x!==id);
+  renderFeaturedPreview();
+}
+function computeFeaturedList(){
+  let list = [...FEATURED_PRODUCTS_CACHE];
+  if(FEATURED_STATE.mode==='bestseller') list.sort((a,b)=>Number(b.Sold||0)-Number(a.Sold||0));
+  else if(FEATURED_STATE.mode==='bundle') list = list.filter(p=>Number(p.Discount||0)>0).sort((a,b)=>Number(b.Discount||0)-Number(a.Discount||0));
+  else if(FEATURED_STATE.mode==='promo') list = list.filter(p=>p.Badge || p.FlashSale==='Yes');
+  else if(FEATURED_STATE.mode==='custom') list = FEATURED_STATE.customIds.map(id=>FEATURED_PRODUCTS_CACHE.find(p=>p.ID===id)).filter(Boolean);
+  else list = list.filter(p=>p.Featured==='Yes');
+  return list.slice(0, FEATURED_STATE.count || 6);
+}
+function renderFeaturedPreview(){
+  const list = computeFeaturedList();
+  document.getElementById('featPreviewGrid').innerHTML = list.length
+    ? list.map(p=>productCardHTML(p,'main')).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;">ບໍ່ມີສິນຄ້າ</div>`;
+}
+function saveFeaturedSettings(){
+  const obj = {
+    featuredMode: FEATURED_STATE.mode,
+    featuredTitle: document.getElementById('featTitle').value,
+    featuredCount: document.getElementById('featCount').value,
+    featuredCustomIds: FEATURED_STATE.customIds.join(',')
+  };
+  adminCall('adminUpdateSettings', obj).then(()=>{
+    toast('ບັນທຶກ ສິນຄ້າແນະນຳ ສຳເລັດ');
+    gsRun('getInitData').then(d=>{ DATA=d; });
   });
 }
 
