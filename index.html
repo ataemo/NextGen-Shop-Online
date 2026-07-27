@@ -1164,20 +1164,19 @@ let pdTouchStartScrollTop = 0;
 let pdWheelLock = false;
 
 function bindProductSwipe(){
-  // ໃຊ້ #productSheet ທັງໝົດເປັນເຂດປັດ (ບໍ່ແມ່ນສະເພາະຮູບ)
+  // ໃຊ້ #productSheet ເປັນຕົວກວດ scroll ແທ້ໆ (ມັນຄືອົງປະກອບທີ່ overflow-y:auto)
   const sheet = document.getElementById('productSheet');
-  const body  = sheet.querySelector('.sheet-body');
-  if(!sheet || !body) return;
+  if(!sheet) return;
 
   // ---------- ມືຖື: ປັດຂຶ້ນ/ລົງ ----------
   sheet.ontouchstart = (e)=>{
     pdTouchStartY = e.touches[0].clientY;
-    pdTouchStartScrollTop = body.scrollTop;
+    pdTouchStartScrollTop = sheet.scrollTop;
   };
   sheet.ontouchend = (e)=>{
     const dy = e.changedTouches[0].clientY - pdTouchStartY;
     const atTop    = pdTouchStartScrollTop <= 0;
-    const atBottom = pdTouchStartScrollTop + body.clientHeight >= body.scrollHeight - 2;
+    const atBottom = pdTouchStartScrollTop + sheet.clientHeight >= sheet.scrollHeight - 2;
     if(Math.abs(dy) < 60) return; // ປັດນ້ອຍເກີນໄປ ບໍ່ນັບ
 
     if(dy > 0 && atTop){          // ປັດລົງ ຢູ່ເທິງສຸດ ➜ ສິນຄ້າກ່ອນໜ້າ
@@ -1189,16 +1188,17 @@ function bindProductSwipe(){
 
   // ---------- PC: ໝູນລູກກິ້ງເມົາສ໌ ----------
   sheet.onwheel = (e)=>{
-    const atTop    = body.scrollTop <= 0;
-    const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 2;
+    const atTop    = sheet.scrollTop <= 0;
+    const atBottom = sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 2;
 
     if((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)){
-      e.preventDefault();           // ບໍ່ໃຫ້ໝູນຫນ້າພື້ນຫຼັງ
-      if(pdWheelLock) return;       // ກັນໝູນຖີ່ເກີນໄປ (ກັນຄ້າງ/ຊ້ຳ)
+      e.preventDefault();           // ຢູ່ຂອບແທ້ໆ ຈຶ່ງປ່ຽນສິນຄ້າ
+      if(pdWheelLock) return;
       pdWheelLock = true;
       e.deltaY < 0 ? navigateProduct(-1) : navigateProduct(1);
       setTimeout(()=>{ pdWheelLock = false; }, 500);
     }
+    // ຖ້າຍັງບໍ່ຮອດຂອບ ➜ ປ່ອຍໃຫ້ scroll ປົກກະຕິ (ອ່ານເນື້ອຫາ, ກົດປຸ່ມໄດ້)
   };
 }
 
