@@ -302,9 +302,16 @@ a{color:inherit;text-decoration:none;}
 }
 
 /* ---------- PRODUCT FEED (scroll ຕໍ່ເນື່ອງ ລະຫວ່າງສິນຄ້າ) ---------- */
-#productSheet{
+#productSheet{ overflow:hidden; }
+#productDetailBody{
   scroll-snap-type: y proximity;
   scroll-behavior: smooth;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:calc(85vh - 54px);
+}
+@media(max-width:767px){
+  #productDetailBody{ max-height:calc(80vh - 54px); }
 }
 .pd-page{
   scroll-snap-align: start;
@@ -1236,22 +1243,20 @@ function appendNextFeedPage(){
 
 /* ---------- ກວດວ່າ page ໃດກຳລັງເບິ່ງຢູ່ ຂະນະ scroll ---------- */
 function bindProductFeedScroll(){
-  const sheet = document.getElementById('productSheet');
-  if(!sheet) return;
-  sheet.onscroll = ()=>{
-    const body = document.getElementById('productDetailBody');
-    const pages = body.querySelectorAll('.pd-page');
-    const sheetTop = sheet.getBoundingClientRect().top;
+  const scrollBox = document.getElementById('productDetailBody');
+  if(!scrollBox) return;
+  scrollBox.onscroll = ()=>{
+    const pages = scrollBox.querySelectorAll('.pd-page');
+    const boxTop = scrollBox.getBoundingClientRect().top;
     let activePage = pages[0];
     pages.forEach(pg=>{
-      const top = pg.getBoundingClientRect().top - sheetTop;
-      if(top <= 40) activePage = pg; // ຫົວ page ຜ່ານຂອບເທິງ ➜ ຖືວ່າເປັນ page ປັດຈຸບັນ
+      const top = pg.getBoundingClientRect().top - boxTop;
+      if(top <= 40) activePage = pg;
     });
     if(activePage && activePage.dataset.id !== (currentProduct && currentProduct.ID)){
       currentProduct = DATA.products.find(p=>p.ID===activePage.dataset.id) || currentProduct;
       refreshFlashMiniTimers();
     }
-    // ຖ້າ page ປັດຈຸບັນເປັນ page ສຸດທ້າຍ ➜ ຕໍ່ສິນຄ້າໜ້າຕໍ່ໄປເພີ່ມ
     if(activePage === pages[pages.length-1]) appendNextFeedPage();
   };
 }
@@ -1299,7 +1304,7 @@ function openProduct(id, listKey){
   const body = document.getElementById('productDetailBody');
   body.innerHTML = buildProductPageHTML(currentProduct);
   openSheet('productSheet');
-  document.getElementById('productSheet').scrollTop = 0;
+  document.getElementById('productDetailBody').scrollTop = 0;
   appendNextFeedPage();       // preload ສິນຄ້າຕໍ່ໄປໄວ້ລຸ່ມສຸດທັນທີ
   bindProductFeedScroll();
   refreshFlashMiniTimers();
