@@ -449,7 +449,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="desktop-nav" id="desktopNav">
       <button class="dn-item active" onclick="switchTab('home')">🏠 ໜ້າຫຼັກ</button>
       <button class="dn-item" onclick="openCategoryPage('all')">🗂️ ສິນຄ້າທັງໝົດ</button>
-      <button class="dn-item" onclick="openFlashPage()">⚡ Flash Sale</button>
+      <button class="dn-item" onclick="openFlashPage()">⚡Flash Sale</button>
       <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
@@ -478,7 +478,7 @@ table tr:hover td{background:var(--primary-light);}
 
   <div class="flash-section hide" id="flashSection">
     <div class="flash-header">
-      <div class="flash-title">⚡ Flash Sale <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
+      <div class="flash-title">⚡Flash Sale <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
       <div class="flash-countdown" id="flashCountdown">00:00:00</div>
     </div>
     <div class="flash-scroll" id="flashScroll"></div>
@@ -546,7 +546,7 @@ table tr:hover td{background:var(--primary-light);}
 <div id="flashPage" class="app hide">
   <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
     <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="closeFlashPage()">←</button>
-    <div class="brand" style="font-size:16px;color:#fff;">⚡ Flash Sale</div>
+    <div class="brand" style="font-size:16px;color:#fff;">⚡Flash Sale</div>
     <div class="spacer"></div>
     <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
   </div>
@@ -819,7 +819,7 @@ function isFlashActive(p){
   const end = p.FlashEnd ? new Date(p.FlashEnd) : null;
   if(start && !isNaN(start) && now < start) return false;
   if(end && !isNaN(end) && now > end) return false;
-  if(p.FlashStock && Number(p.Sold||0) >= Number(p.FlashStock)) return false;
+  if(p.FlashStock && Number(p.FlashSold||0) >= Number(p.FlashStock)) return false;
   return true;
 }
 function flashPrice(p){ return isFlashActive(p) ? Number(p.FlashPrice||p.Price) : Number(p.Price); }
@@ -848,7 +848,7 @@ function productCardHTML(p, listKey){
   const badge = flash
     ? `<div class="badge-tag" style="background:linear-gradient(90deg,#FF3D3D,#FF7A00);">⚡ -${discount}%</div>`
     : (p.Discount ? `<div class="badge-tag" style="background:var(--danger);">-${p.Discount}%</div>` : (p.Badge?`<div class="badge-tag" style="background:var(--accent);">${p.Badge}</div>`:''));
-  const soldPct = (flash && p.FlashStock) ? Math.min(100, Math.round((Number(p.Sold||0)/Number(p.FlashStock))*100)) : null;
+  const soldPct = (flash && p.FlashStock) ? Math.min(100, Math.round((Number(p.FlashSold||0)/Number(p.FlashStock))*100)) : null;
   return `
     <div class="card" onclick="openProduct('${p.ID}','${key}')">
       <div class="imgwrap">
@@ -2208,7 +2208,8 @@ function openProductForm(existing){
       {key:'FlashPrice', label:'⚡ ລາຄາ Flash Sale', type:'number'},
       {key:'FlashStart', label:'⚡ ວັນ-ເວລາ ເລີ່ມ', type:'datetime-local'},
       {key:'FlashEnd', label:'⚡ ວັນ-ເວລາ ສິ້ນສຸດ', type:'datetime-local'},
-      {key:'FlashStock', label:'⚡ ໂຄຕ້າ Flash Sale (ປະໄວ້ວ່າງ = ບໍ່ຈຳກັດ)', type:'number'}
+      {key:'FlashStock', label:'⚡ ໂຄຕ້າ Flash Sale (ປະໄວ້ວ່າງ = ບໍ່ຈຳກັດ)', type:'number'},
+      {key:'FlashSold', label:'⚡ ຂາຍໄປແລ້ວໃນຮອບນີ້ (ຕັ້ງ 0 ເມື່ອເປີດແຄມເປນໃໝ່)', type:'number'}
     ]
   }, existing);
 }
@@ -2242,7 +2243,7 @@ function renderAdminFlashSale(){
               <td style="color:var(--danger);font-weight:700;">${fmt(p.FlashPrice)}</td>
               <td style="font-size:12px;">${p.FlashStart?new Date(p.FlashStart).toLocaleString('lo-LA'):'-'}</td>
               <td style="font-size:12px;">${p.FlashEnd?new Date(p.FlashEnd).toLocaleString('lo-LA'):'-'}</td>
-              <td style="font-size:12px;">${p.FlashStock?(p.Sold||0)+' / '+p.FlashStock:'ບໍ່ຈຳກັດ'}</td>
+              <td style="font-size:12px;">${p.FlashStock?(p.FlashSold||0)+' / '+p.FlashStock:'ບໍ່ຈຳກັດ'}</td>
               <td>${st}</td>
               <td>
                 <button class="mini-btn" onclick='openProductForm(${JSON.stringify(p).replace(/'/g,"&apos;")})'>✏️</button>
