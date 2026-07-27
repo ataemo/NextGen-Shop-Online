@@ -259,6 +259,7 @@ a{color:inherit;text-decoration:none;}
 .sheet-header{display:flex;align-items:center;justify-content:space-between;padding:0 18px 10px;position:sticky;top:0;background:var(--surface);z-index:2;}
 .sheet-header h3{margin:0;font-size:16px;font-family:var(--font-display);}
 .sheet-body{padding:0 18px 24px;}
+.sheet-body{ overscroll-behavior:contain; }
 .close-x{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;}
 
 .modal-center-wrap{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -1164,15 +1165,48 @@ function navigateProduct(delta){
   openProduct(list[newIdx], currentNavListKey);
 }
 let pdTouchStartY = 0;
+let pdTouchStartScrollTop = 0;
+let pdWheelLock = false;
+
 function bindProductSwipe(){
-  const wrap = document.getElementById('pdImgWrap');
-  if(!wrap) return;
-  wrap.ontouchstart = (e)=>{ pdTouchStartY = e.touches[0].clientY; };
-  wrap.ontouchend = (e)=>{
+  // ໃຊ້ #productSheet ທັງໝົດເປັນເຂດປັດ (ບໍ່ແມ່ນສະເພາະຮູບ)
+  const sheet = document.getElementById('productSheet');
+  const body  = sheet.querySelector('.sheet-body');
+  if(!sheet || !body) return;
+
+  // ---------- ມືຖື: ປັດຂຶ້ນ/ລົງ ----------
+  sheet.ontouchstart = (e)=>{
+    pdTouchStartY = e.touches[0].clientY;
+    pdTouchStartScrollTop = body.scrollTop;
+  };
+  sheet.ontouchend = (e)=>{
     const dy = e.changedTouches[0].clientY - pdTouchStartY;
-    if(Math.abs(dy) > 50){ dy>0 ? navigateProduct(-1) : navigateProduct(1); }
+    const atTop    = pdTouchStartScrollTop <= 0;
+    const atBottom = pdTouchStartScrollTop + body.clientHeight >= body.scrollHeight - 2;
+    if(Math.abs(dy) < 60) return; // ປັດນ້ອຍເກີນໄປ ບໍ່ນັບ
+
+    if(dy > 0 && atTop){          // ປັດລົງ ຢູ່ເທິງສຸດ ➜ ສິນຄ້າກ່ອນໜ້າ
+      navigateProduct(-1);
+    } else if(dy < 0 && atBottom){ // ປັດຂຶ້ນ ຢູ່ລຸ່ມສຸດ ➜ ສິນຄ້າຕໍ່ໄປ
+      navigateProduct(1);
+    }
+  };
+
+  // ---------- PC: ໝູນລູກກິ້ງເມົາສ໌ ----------
+  sheet.onwheel = (e)=>{
+    const atTop    = body.scrollTop <= 0;
+    const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 2;
+
+    if((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)){
+      e.preventDefault();           // ບໍ່ໃຫ້ໝູນຫນ້າພື້ນຫຼັງ
+      if(pdWheelLock) return;       // ກັນໝູນຖີ່ເກີນໄປ (ກັນຄ້າງ/ຊ້ຳ)
+      pdWheelLock = true;
+      e.deltaY < 0 ? navigateProduct(-1) : navigateProduct(1);
+      setTimeout(()=>{ pdWheelLock = false; }, 500);
+    }
   };
 }
+
 function openProduct(id, listKey){
   if(listKey) currentNavListKey = listKey;
   currentProduct = DATA.products.find(p=>p.ID===id);
