@@ -144,6 +144,25 @@ a{color:inherit;text-decoration:none;}
   100%{transform:translateX(-50%);}
 }
 
+/* ---------- FLASH SALE ---------- */
+.flash-section{margin:0 16px 14px;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-soft);background:linear-gradient(135deg,#FF3D3D,#FF7A00);}
+.flash-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;}
+.flash-title{color:#fff;font-family:var(--font-display);font-weight:800;font-size:16px;display:flex;align-items:center;gap:6px;}
+.flash-title .see-all{font-size:11px;font-weight:600;background:rgba(255,255,255,.25);padding:4px 10px;border-radius:20px;margin-left:8px;}
+.flash-countdown{background:rgba(0,0,0,.28);color:#fff;font-family:var(--font-display);font-weight:800;font-size:14px;padding:6px 12px;border-radius:10px;letter-spacing:1px;}
+.flash-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 14px 14px;scrollbar-width:none;}
+.flash-scroll::-webkit-scrollbar{display:none;}
+.flash-card{flex-shrink:0;width:120px;background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.15);}
+.flash-card img{width:100%;height:120px;object-fit:cover;background:var(--primary-light);}
+.flash-card .fc-name{font-size:11px;font-weight:600;padding:6px 8px 0;color:var(--text);height:30px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.flash-card .fc-price{font-size:12px;font-weight:800;color:var(--danger);padding:2px 8px 0;}
+.flash-card .fc-old{font-size:10px;color:var(--text-muted);text-decoration:line-through;padding:0 8px 8px;}
+.flash-count-mini{font-size:10px;color:var(--danger);font-weight:700;margin-top:2px;}
+.flash-progress{height:6px;border-radius:6px;background:var(--primary-light);margin-top:6px;overflow:hidden;}
+.flash-progress-bar{height:100%;background:linear-gradient(90deg,#FF3D3D,#FF7A00);border-radius:6px;}
+.flash-progress-lbl{font-size:10px;color:var(--text-muted);margin-top:2px;}
+.pd-flash-banner{background:linear-gradient(90deg,#FF3D3D,#FF7A00);color:#fff;font-weight:700;font-size:13px;padding:10px 14px;border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+
 /* ---------- CATEGORIES ---------- */
 .section-title{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;}
 .section-title h3{margin:0;font-size:16px;font-weight:700;}
@@ -261,6 +280,15 @@ a{color:inherit;text-decoration:none;}
   }
   #productSheet .sheet-handle{ display:none; }
 }
+
+/* ---------- PRODUCT NAV (prev/next) ---------- */
+.pd-imgwrap{position:relative;width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;margin-bottom:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;touch-action:pan-y;}
+.pd-imgwrap img{width:100%;height:100%;object-fit:cover;}
+.pd-nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:3;backdrop-filter:blur(4px);}
+.pd-nav-btn:active{background:rgba(0,0,0,.55);}
+.pd-nav-prev{left:8px;}
+.pd-nav-next{right:8px;}
+.pd-nav-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.35);color:#fff;font-size:10px;padding:3px 10px;border-radius:20px;z-index:3;}
 
 /* ---------- FORM ELEMENTS ---------- */
 .field{margin-bottom:14px;}
@@ -421,6 +449,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="desktop-nav" id="desktopNav">
       <button class="dn-item active" onclick="switchTab('home')">🏠 ໜ້າຫຼັກ</button>
       <button class="dn-item" onclick="openCategoryPage('all')">🗂️ ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item" onclick="openFlashPage()">⚡ Flash Sale</button>
       <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
@@ -447,6 +476,14 @@ table tr:hover td{background:var(--primary-light);}
     <div class="track" id="promoTickerTrack"></div>
   </div>
 
+  <div class="flash-section hide" id="flashSection">
+    <div class="flash-header">
+      <div class="flash-title">⚡ Flash Sale <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
+      <div class="flash-countdown" id="flashCountdown">00:00:00</div>
+    </div>
+    <div class="flash-scroll" id="flashScroll"></div>
+  </div>
+
   <div class="section-title"><h3>ໝວດໝູ່ສິນຄ້າ</h3></div>
   <div class="cat-scroll" id="catScroll">
     <div class="cat-chip"><div class="ic skeleton skeleton-cat"></div></div>
@@ -467,6 +504,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="nav-pill" id="navPill"></div>
     <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" data-tab="category" onclick="openCategoryPage('all')"><span class="ic">🗂️</span>ໝວດໝູ່</button>
+    <button class="nav-item" data-tab="flash" onclick="openFlashPage()"><span class="ic">⚡</span>Flash Sale</button>
     <button class="nav-item" data-tab="cart" onclick="openCart()"><span class="ic">🛒</span>ກະຕ່າ</button>
     <button class="nav-item" data-tab="orders" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
@@ -502,10 +540,27 @@ table tr:hover td{background:var(--primary-light);}
   </div>
 </div>
 
+<!-- ============================================================
+     FLASH SALE PAGE (ໜ້າແຍກຕ່າງຫາກ)
+     ============================================================ -->
+<div id="flashPage" class="app hide">
+  <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
+    <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="closeFlashPage()">←</button>
+    <div class="brand" style="font-size:16px;color:#fff;">⚡ Flash Sale</div>
+    <div class="spacer"></div>
+    <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
+  </div>
+  <div style="padding:14px 16px;">
+    <div class="flash-countdown" style="display:inline-block;background:linear-gradient(135deg,#FF3D3D,#FF7A00);color:#fff;" id="flashPageCountdown">⏱ 00:00:00</div>
+  </div>
+  <div class="grid" id="flashPageGrid"></div>
+</div>
+
 <!-- Side menu (3-dot) -->
 <div class="side-menu" id="sideMenu">
   <h4>🛍️ LAO SHOP</h4>
   <button class="item" onclick="toggleTheme()"><span class="ic">🌗</span> <span id="themeLabel">ໂໝດມືດ / ໂໝດແຈ້ງ</span></button>
+  <button class="item" onclick="openFlashPage()"><span class="ic">⚡</span> Flash Sale</button>
   <button class="item" onclick="openMyOrders()"><span class="ic">📦</span> ຕິດຕາມອໍເດີ</button>
   <button class="item"><span class="ic">📞</span> <span id="sideContact">ຕິດຕໍ່ຮ້ານ</span></button>
   <hr>
@@ -755,6 +810,145 @@ function viewImageLightbox(url){ document.getElementById('imgLightboxImg').src=u
 function closeImgLightbox(){ document.getElementById('imgLightbox').classList.add('hide'); }
 
 /* ============================================================
+   FLASH SALE — HELPERS
+   ============================================================ */
+function isFlashActive(p){
+  if(!p || p.FlashSale !== 'Yes') return false;
+  const now = new Date();
+  const start = p.FlashStart ? new Date(p.FlashStart) : null;
+  const end = p.FlashEnd ? new Date(p.FlashEnd) : null;
+  if(start && !isNaN(start) && now < start) return false;
+  if(end && !isNaN(end) && now > end) return false;
+  if(p.FlashStock && Number(p.Sold||0) >= Number(p.FlashStock)) return false;
+  return true;
+}
+function flashPrice(p){ return isFlashActive(p) ? Number(p.FlashPrice||p.Price) : Number(p.Price); }
+function getActiveFlashProducts(){ return (DATA.products||[]).filter(isFlashActive); }
+function nearestFlashEnd(){
+  const list = getActiveFlashProducts().map(p=>new Date(p.FlashEnd)).filter(d=>!isNaN(d));
+  if(!list.length) return null;
+  return new Date(Math.min(...list.map(d=>d.getTime())));
+}
+function fmtCountdown(diffMs){
+  if(diffMs<0) diffMs=0;
+  const h=String(Math.floor(diffMs/3600000)).padStart(2,'0');
+  const m=String(Math.floor(diffMs/60000)%60).padStart(2,'0');
+  const s=String(Math.floor(diffMs/1000)%60).padStart(2,'0');
+  return h+':'+m+':'+s;
+}
+
+/* ---------- ບັດສິນຄ້າແບບໃຊ້ຮ່ວມກັນ (ໃຊ້ທັງໜ້າຫຼັກ, ໝວດໝູ່, Flash Sale) ---------- */
+let NAV_LISTS = {};
+function productCardHTML(p, listKey){
+  const key = listKey || 'main';
+  const flash = isFlashActive(p);
+  const price = flash ? flashPrice(p) : Number(p.Price);
+  const oldPrice = flash ? Number(p.Price) : (p.OldPrice ? Number(p.OldPrice) : 0);
+  const discount = flash && oldPrice>price ? Math.round((1-price/oldPrice)*100) : (p.Discount||0);
+  const badge = flash
+    ? `<div class="badge-tag" style="background:linear-gradient(90deg,#FF3D3D,#FF7A00);">⚡ -${discount}%</div>`
+    : (p.Discount ? `<div class="badge-tag" style="background:var(--danger);">-${p.Discount}%</div>` : (p.Badge?`<div class="badge-tag" style="background:var(--accent);">${p.Badge}</div>`:''));
+  const soldPct = (flash && p.FlashStock) ? Math.min(100, Math.round((Number(p.Sold||0)/Number(p.FlashStock))*100)) : null;
+  return `
+    <div class="card" onclick="openProduct('${p.ID}','${key}')">
+      <div class="imgwrap">
+        ${p.ImageURL ? `<img src="${p.ImageURL}">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:34px;">🛍️</div>`}
+        ${badge}
+        <button class="add-btn" onclick="event.stopPropagation();quickAdd('${p.ID}')">+</button>
+      </div>
+      <div class="body">
+        <div class="name">${p.Name}</div>
+        <div class="price-row"><span class="price">${fmt(price)} ₭</span>${oldPrice?`<span class="old-price">${fmt(oldPrice)}</span>`:''}</div>
+        ${flash ? `<div class="flash-count-mini" data-flash-end="${p.FlashEnd}">⏱ ໝົດເວລາໃນ <span class="fc-text"></span></div>` : ''}
+        ${soldPct!==null ? `<div class="flash-progress"><div class="flash-progress-bar" style="width:${soldPct}%"></div></div><div class="flash-progress-lbl">ຂາຍແລ້ວ ${soldPct}%</div>` : `<div class="meta"><span>⭐ ${p.Rating||'-'}</span><span>ຂາຍແລ້ວ ${p.Sold||0}</span></div>`}
+      </div>
+    </div>`;
+}
+
+/* ---------- ອັບເດດຕົວນັບເວລາຖອຍຫຼັງທັງໝົດໃນໜ້າ (ແທັກ .flash-count-mini) ---------- */
+function refreshFlashMiniTimers(){
+  document.querySelectorAll('.flash-count-mini').forEach(el=>{
+    const end = new Date(el.dataset.flashEnd);
+    if(isNaN(end)){ el.querySelector('.fc-text').textContent='-'; return; }
+    const diff = end - new Date();
+    el.querySelector('.fc-text').textContent = diff>0 ? fmtCountdown(diff) : 'ໝົດແລ້ວ';
+  });
+  const pdEl = document.getElementById('pdFlashCountdown');
+  if(pdEl && currentProduct){
+    const end = new Date(currentProduct.FlashEnd);
+    if(!isNaN(end)){
+      const diff = end - new Date();
+      pdEl.textContent = diff>0 ? fmtCountdown(diff) : 'ໝົດແລ້ວ';
+    }
+  }
+}
+setInterval(refreshFlashMiniTimers, 1000);
+
+/* ---------- ສ່ວນ Flash Sale ໜ້າຫຼັກ ---------- */
+function renderFlashSection(){
+  const list = getActiveFlashProducts();
+  const sec = document.getElementById('flashSection');
+  if(!sec) return;
+  if(!list.length){ sec.classList.add('hide'); return; }
+  sec.classList.remove('hide');
+  NAV_LISTS.flash = list.map(p=>p.ID);
+  document.getElementById('flashScroll').innerHTML = list.map(p=>{
+    const price = flashPrice(p);
+    return `
+    <div class="flash-card" onclick="openProduct('${p.ID}','flash')">
+      <img src="${p.ImageURL||''}">
+      <div class="fc-name">${p.Name}</div>
+      <div class="fc-price">${fmt(price)} ₭</div>
+      <div class="fc-old">${fmt(p.Price)} ₭</div>
+    </div>`;
+  }).join('');
+  updateFlashBannerCountdown();
+}
+let flashBannerTimer=null;
+function updateFlashBannerCountdown(){
+  clearInterval(flashBannerTimer);
+  const tick = ()=>{
+    const end = nearestFlashEnd();
+    const el = document.getElementById('flashCountdown');
+    const elPage = document.getElementById('flashPageCountdown');
+    if(!end){
+      const sec=document.getElementById('flashSection'); if(sec) sec.classList.add('hide');
+      clearInterval(flashBannerTimer);
+      return;
+    }
+    const diff = end - new Date();
+    if(diff<=0){ renderFlashSection(); renderProducts(); if(!document.getElementById('flashPage').classList.contains('hide')) renderFlashPageProducts(); return; }
+    if(el) el.textContent = fmtCountdown(diff);
+    if(elPage) elPage.textContent = '⏱ ' + fmtCountdown(diff);
+  };
+  tick();
+  flashBannerTimer = setInterval(tick, 1000);
+}
+
+/* ---------- ໜ້າ Flash Sale ແຍກຕ່າງຫາກ ---------- */
+function openFlashPage(){
+  closeAllOverlays();
+  document.getElementById('storefront').classList.add('hide');
+  document.getElementById('categoryPage').classList.add('hide');
+  document.getElementById('flashPage').classList.remove('hide');
+  renderFlashPageProducts();
+  updateFlashBannerCountdown();
+  window.scrollTo(0,0);
+}
+function closeFlashPage(){
+  document.getElementById('flashPage').classList.add('hide');
+  document.getElementById('storefront').classList.remove('hide');
+}
+function renderFlashPageProducts(){
+  const list = getActiveFlashProducts().sort((a,b)=> new Date(a.FlashEnd) - new Date(b.FlashEnd));
+  NAV_LISTS.flashpage = list.map(p=>p.ID);
+  const grid = document.getElementById('flashPageGrid');
+  grid.innerHTML = list.length
+    ? list.map(p=>productCardHTML(p,'flashpage')).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">⚡</div>ຍັງບໍ່ມີສິນຄ້າ Flash Sale ໃນຕອນນີ້<br><span style="font-size:12px;">ແອັດມີນສາມາດເປີດແຄມເປນ Flash Sale ຈາກໜ້າ "ສິນຄ້າ" ໃນລະບົບຫຼັງບ້ານ</span></div>`;
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 window.addEventListener('load', init);
@@ -769,6 +963,7 @@ function init(){
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
+    renderFlashSection();
     renderCategories();
     renderProducts();
     renderShippingOptions();
@@ -797,6 +992,7 @@ function loadStorefront(){
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
+    renderFlashSection();
     renderCategories();
     renderProducts();
     renderShipMethods();
@@ -815,6 +1011,7 @@ function silentRefreshData(){
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
+    renderFlashSection();
     renderCategories();
     renderProducts();
     renderShipMethods();
@@ -927,25 +1124,10 @@ function renderCategoryPageProducts(){
     const matchSearch = !search || (p.Name||'').toLowerCase().includes(search);
     return matchCat && matchSearch;
   });
+  NAV_LISTS.category = list.map(p=>p.ID);
   const grid = document.getElementById('catPageGrid');
   if(!list.length){ grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">📭</div>ບໍ່ພົບສິນຄ້າ</div>`; return; }
-  grid.innerHTML = list.map(p=>{
-    const discount = p.Discount ? `<div class="badge-tag" style="background:var(--danger);">-${p.Discount}%</div>` : (p.Badge ? `<div class="badge-tag" style="background:var(--accent);">${p.Badge}</div>` : '');
-    const oldPrice = p.OldPrice ? `<span class="old-price">${fmt(p.OldPrice)}</span>` : '';
-    return `
-    <div class="card" onclick="openProduct('${p.ID}')">
-      <div class="imgwrap">
-        ${p.ImageURL ? `<img src="${p.ImageURL}">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:34px;">🛍️</div>`}
-        ${discount}
-        <button class="add-btn" onclick="event.stopPropagation();quickAdd('${p.ID}')">+</button>
-      </div>
-      <div class="body">
-        <div class="name">${p.Name}</div>
-        <div class="price-row"><span class="price">${fmt(p.Price)} ₭</span>${oldPrice}</div>
-        <div class="meta"><span>⭐ ${p.Rating||'-'}</span><span>ຂາຍແລ້ວ ${p.Sold||0}</span></div>
-      </div>
-    </div>`;
-  }).join('');
+  grid.innerHTML = list.map(p=>productCardHTML(p,'category')).join('');
 }
 
 /* ============================================================
@@ -959,25 +1141,10 @@ function renderProducts(){
     return matchCat && matchSearch;
   });
   document.getElementById('prodTitle').textContent = STATE.activeCategory==='all' ? 'ສິນຄ້າແນະນຳ' : 'ຜົນການຄົ້ນຫາ';
+  NAV_LISTS.main = list.map(p=>p.ID);
   const grid = document.getElementById('productGrid');
   if(!list.length){ grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">📭</div>ບໍ່ພົບສິນຄ້າ</div>`; return; }
-  grid.innerHTML = list.map(p=>{
-    const discount = p.Discount ? `<div class="badge-tag" style="background:var(--danger);">-${p.Discount}%</div>` : (p.Badge ? `<div class="badge-tag" style="background:var(--accent);">${p.Badge}</div>` : '');
-    const oldPrice = p.OldPrice ? `<span class="old-price">${fmt(p.OldPrice)}</span>` : '';
-    return `
-    <div class="card" onclick="openProduct('${p.ID}')">
-      <div class="imgwrap">
-        ${p.ImageURL ? `<img src="${p.ImageURL}">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:34px;">🛍️</div>`}
-        ${discount}
-        <button class="add-btn" onclick="event.stopPropagation();quickAdd('${p.ID}')">+</button>
-      </div>
-      <div class="body">
-        <div class="name">${p.Name}</div>
-        <div class="price-row"><span class="price">${fmt(p.Price)} ₭</span>${oldPrice}</div>
-        <div class="meta"><span>⭐ ${p.Rating||'-'}</span><span>ຂາຍແລ້ວ ${p.Sold||0}</span></div>
-      </div>
-    </div>`;
-  }).join('');
+  grid.innerHTML = list.map(p=>productCardHTML(p,'main')).join('');
 }
 function catNameById(id){
   const c = DATA.categories.find(x=>x.ID===id);
@@ -985,23 +1152,52 @@ function catNameById(id){
 }
 
 let currentProduct = null;
-function openProduct(id){
+let currentNavListKey = 'main';
+function navList(){ return NAV_LISTS[currentNavListKey] || DATA.products.map(p=>p.ID); }
+function navigateProduct(delta){
+  const list = navList();
+  if(!list.length || !currentProduct) return;
+  const idx = list.indexOf(currentProduct.ID);
+  let newIdx = (idx===-1?0:idx) + delta;
+  if(newIdx<0) newIdx = list.length-1;
+  if(newIdx>=list.length) newIdx = 0;
+  openProduct(list[newIdx], currentNavListKey);
+}
+let pdTouchStartX = 0;
+function bindProductSwipe(){
+  const wrap = document.getElementById('pdImgWrap');
+  if(!wrap) return;
+  wrap.ontouchstart = (e)=>{ pdTouchStartX = e.touches[0].clientX; };
+  wrap.ontouchend = (e)=>{
+    const dx = e.changedTouches[0].clientX - pdTouchStartX;
+    if(Math.abs(dx) > 50){ dx>0 ? navigateProduct(-1) : navigateProduct(1); }
+  };
+}
+function openProduct(id, listKey){
+  if(listKey) currentNavListKey = listKey;
   currentProduct = DATA.products.find(p=>p.ID===id);
   if(!currentProduct) return;
   const p = currentProduct;
+  const flash = isFlashActive(p);
+  const price = flash ? flashPrice(p) : Number(p.Price);
+  const oldPriceForShow = flash ? Number(p.Price) : (p.OldPrice||0);
   const colors = (p.Colors||'').split(',').map(s=>s.trim()).filter(Boolean);
   const sizes = (p.Sizes||'').split(',').map(s=>s.trim()).filter(Boolean);
   const images = [p.ImageURL, ...(p.Images||'').split(',').map(s=>s.trim())].filter(Boolean);
   document.getElementById('productDetailBody').innerHTML = `
-    <div style="width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;margin-bottom:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;">
+    ${flash ? `<div class="pd-flash-banner">⚡ Flash Sale ໝົດເວລາໃນ <span id="pdFlashCountdown">--:--:--</span></div>` : ''}
+    <div class="pd-imgwrap" id="pdImgWrap">
       ${images.length ? `<img id="mainProductImage" src="${images[0]}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:60px;">🛍️</span>`}
+      <button class="pd-nav-btn pd-nav-prev" onclick="navigateProduct(-1)">‹</button>
+      <button class="pd-nav-btn pd-nav-next" onclick="navigateProduct(1)">›</button>
+      <div class="pd-nav-hint">ເລື່ອນ ຫຼື ກົດລູກສອນ ເພື່ອເບິ່ງສິນຄ້າຕໍ່ໄປ</div>
     </div>
     ${images.length>1?`<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;">
       ${images.map((img,idx)=>`<img src="${img}" onclick="document.getElementById('mainProductImage').src='${img}'" style="width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;border:2px solid ${idx===0?'var(--primary)':'transparent'};cursor:pointer;">`).join('')}
     </div>`:'<div style="margin-bottom:14px;"></div>'}
     <h2 style="margin:0 0 4px;font-size:18px;">${p.Name}</h2>
     <div style="color:var(--text-muted);font-size:13px;margin-bottom:8px;">${p.ShortDesc||''}</div>
-    <div class="price-row" style="margin-bottom:10px;"><span class="price" style="font-size:22px;">${fmt(p.Price)} ₭</span>${p.OldPrice?`<span class="old-price" style="margin-left:8px;">${fmt(p.OldPrice)}</span>`:''}</div>
+    <div class="price-row" style="margin-bottom:10px;"><span class="price" style="font-size:22px;">${fmt(price)} ₭</span>${oldPriceForShow?`<span class="old-price" style="margin-left:8px;">${fmt(oldPriceForShow)}</span>`:''}</div>
     ${colors.length?`<div class="field"><label>ສີ</label><div class="tag-input-row" id="colorOpts">${colors.map((c,i)=>`<button class="btn btn-outline btn-sm opt-btn" data-type="color" data-val="${c}" onclick="selectOpt(this)">${c}</button>`).join('')}</div></div>`:''}
     ${sizes.length?`<div class="field"><label>ຂະໜາດ</label><div class="tag-input-row" id="sizeOpts">${sizes.map((s,i)=>`<button class="btn btn-outline btn-sm opt-btn" data-type="size" data-val="${s}" onclick="selectOpt(this)">${s}</button>`).join('')}</div></div>`:''}
     <div class="field"><label>ຈຳນວນ</label>
@@ -1016,6 +1212,8 @@ function openProduct(id){
   `;
   detailState = { qty:1, color:colors[0]||'', size:sizes[0]||'' };
   openSheet('productSheet');
+  bindProductSwipe();
+  refreshFlashMiniTimers();
 }
 let detailState = { qty:1, color:'', size:'' };
 function selectOpt(btn){
@@ -1039,17 +1237,18 @@ function addToCart(buyNow){
   openCart();
 }
 function addItemToCart(p, qty, color, size){
+  const unitPrice = flashPrice(p);
   const key = p.ID+'|'+color+'|'+size;
   const existing = STATE.cart.find(i=>i.key===key);
   if(existing) existing.qty += qty;
-  else STATE.cart.push({key, productId:p.ID, name:p.Name, image:p.ImageURL, price:Number(p.Price), color, size, qty});
+  else STATE.cart.push({key, productId:p.ID, name:p.Name, image:p.ImageURL, price:unitPrice, color, size, qty});
   saveCart();
   const item = STATE.cart.find(i=>i.key===key);
   return item ? item.qty : qty;
 }
 function updateCartBadge(){
   const count = STATE.cart.reduce((s,i)=>s+i.qty,0);
-  [document.getElementById('cartBadge'), document.getElementById('cartBadge2')].forEach(badge=>{
+  [document.getElementById('cartBadge'), document.getElementById('cartBadge2'), document.getElementById('cartBadge3')].forEach(badge=>{
     if(!badge) return;
     if(count>0){ badge.textContent=count; badge.classList.remove('hide'); } else badge.classList.add('hide');
   });
@@ -1409,6 +1608,7 @@ function backToStore(){
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
+    renderFlashSection();
     renderCategories();
     renderProducts();
     renderShipMethods();
@@ -1423,6 +1623,7 @@ const ADMIN_MENU = [
   {id:'dashboard', label:'ພາບລວມ', ic:'📊', roles:['Administrator','Manager','Accountant','Sales','Warehouse','Marketing']},
   {id:'orders', label:'ອໍເດີ', ic:'📦', roles:['Administrator','Manager','Sales']},
   {id:'products', label:'ສິນຄ້າ', ic:'🛍️', roles:['Administrator','Manager','Warehouse']},
+  {id:'flashsale', label:'⚡ Flash Sale', ic:'⚡', roles:['Administrator','Manager','Marketing']},
   {id:'categories', label:'ໝວດໝູ່', ic:'🗂️', roles:['Administrator','Manager','Warehouse']},
   {id:'banners', label:'Banner', ic:'🖼️', roles:['Administrator','Manager','Marketing']},
   {id:'promotion', label:'ໂປຣໂມຊັ່ນ / ຄູປອງ', ic:'🎟️', roles:['Administrator','Manager','Marketing']},
@@ -1460,7 +1661,6 @@ function scheduleAdminCacheSave(tab){
     const el = document.getElementById('adminContent');
     if(!el) return;
     const html = el.innerHTML;
-    // ຖ້າຍັງສະແດງ "ກຳລັງໂຫຼດ" ຫຼື ຂໍ້ຄວາມ Error ຢູ່ ແປວ່າຍັງໂຫຼດບໍ່ສຳເລັດ ຢ່າຫາກໍ່ບັນທຶກ cache
     const stillLoading = html.includes('ກຳລັງໂຫຼດ') || html.includes('ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ');
     if(stillLoading && attempts < 20){ setTimeout(trySave, 500); return; }
     if(!stillLoading){
@@ -1479,11 +1679,11 @@ function openAdminTab(tab){
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
 
-  // ຖ້າມີ cache ຢູ່ແລ້ວ ໃຫ້ສະແດງທັນທີ (ບໍ່ຕ້ອງລໍ)
   content.innerHTML = adminTabCache[tab] || `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
 
   const renderers = {
     dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
+    flashsale: renderAdminFlashSale,
     categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
     customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
     analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
@@ -1967,11 +2167,12 @@ function renderAdminProducts(){
           <button class="btn btn-primary btn-sm" onclick="openProductForm()">+ ເພີ່ມສິນຄ້າ</button>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ຮູບ</th><th>ຊື່</th><th>ໝວດ</th><th>ລາຄາ</th><th>ສະຕັອກ</th><th>ສະຖານະ</th><th></th></tr></thead>
+          <thead><tr><th>ຮູບ</th><th>ຊື່</th><th>ໝວດ</th><th>ລາຄາ</th><th>ສະຕັອກ</th><th>Flash</th><th>ສະຖານະ</th><th></th></tr></thead>
           <tbody>${products.map(p=>`
             <tr>
               <td><img src="${p.ImageURL||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--primary-light);"></td>
               <td>${p.Name}</td><td>${p.Category}</td><td>${fmt(p.Price)}</td><td>${p.Stock}</td>
+              <td>${p.FlashSale==='Yes' ? (isFlashActive(p)?'<span class="chip chip-shipping">🔥 ດຳເນີນ</span>':'<span class="chip chip-pending">ກຳນົດແລ້ວ</span>') : '<span style="color:var(--text-muted);font-size:11px;">-</span>'}</td>
               <td><span class="chip ${p.Status==='Hidden'?'chip-cancelled':'chip-completed'}">${p.Status||'Active'}</span></td>
               <td>
                 <button class="mini-btn" onclick='openProductForm(${JSON.stringify(p).replace(/'/g,"&apos;")})'>✏️</button>
@@ -2002,13 +2203,68 @@ function openProductForm(existing){
       {key:'Images', label:'ຮູບເພີ່ມເຕີມ (ຂັ້ນດ້ວຍ ,)'},
       {key:'Colors', label:'ສີ (ຂັ້ນດ້ວຍ ,)'},
       {key:'Sizes', label:'ຂະໜາດ (ຂັ້ນດ້ວຍ ,)'},
-      {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']}
+      {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']},
+      {key:'FlashSale', label:'⚡ ເປີດໃຊ້ Flash Sale?', type:'select', options:['No','Yes']},
+      {key:'FlashPrice', label:'⚡ ລາຄາ Flash Sale', type:'number'},
+      {key:'FlashStart', label:'⚡ ວັນ-ເວລາ ເລີ່ມ', type:'datetime-local'},
+      {key:'FlashEnd', label:'⚡ ວັນ-ເວລາ ສິ້ນສຸດ', type:'datetime-local'},
+      {key:'FlashStock', label:'⚡ ໂຄຕ້າ Flash Sale (ປະໄວ້ວ່າງ = ບໍ່ຈຳກັດ)', type:'number'}
     ]
   }, existing);
 }
 function deleteProduct(id){
   if(!confirm('ຢືນຢັນລຶບສິນຄ້ານີ້?')) return;
   adminCall('adminDeleteProduct', id).then(()=>{ toast('ລຶບສຳເລັດ'); renderAdminProducts(); });
+}
+
+/* ---------- FLASH SALE (ຈັດການແຄມເປນ) ---------- */
+function renderAdminFlashSale(){
+  adminCall('adminGetProducts').then(products=>{
+    const list = products.filter(p=>p.FlashSale==='Yes');
+    document.getElementById('adminContent').innerHTML = `
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+          <h4 style="margin:0;">⚡ ສິນຄ້າໃນແຄມເປນ Flash Sale (${list.length})</h4>
+          <button class="btn btn-primary btn-sm" onclick="openAdminTab('products')">+ ເລືອກສິນຄ້າຈາກໜ້າ "ສິນຄ້າ"</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">ເປີດໃຊ້ Flash Sale ໄດ້ຈາກໜ້າແກ້ໄຂສິນຄ້າ (ປຸ່ມ ✏️) — ຕັ້ງລາຄາພິເສດ, ວັນ-ເວລາເລີ່ມ/ສິ້ນສຸດ ແລະ ໂຄຕ້າ</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>ຮູບ</th><th>ຊື່</th><th>ລາຄາປົກກະຕິ</th><th>ລາຄາ Flash</th><th>ເລີ່ມ</th><th>ສິ້ນສຸດ</th><th>ໂຄຕ້າ/ຂາຍແລ້ວ</th><th>ສະຖານະ</th><th></th></tr></thead>
+          <tbody>${list.map(p=>{
+            const active = isFlashActive(p);
+            const now = new Date();
+            const end = p.FlashEnd ? new Date(p.FlashEnd) : null;
+            let st = active ? '<span class="chip chip-shipping">🔥 ກຳລັງດຳເນີນ</span>' : ((end && !isNaN(end) && now>end) ? '<span class="chip chip-cancelled">ໝົດເວລາ</span>' : '<span class="chip chip-pending">ລໍຖ້າເລີ່ມ</span>');
+            return `<tr>
+              <td><img src="${p.ImageURL||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;"></td>
+              <td>${p.Name}</td>
+              <td>${fmt(p.Price)}</td>
+              <td style="color:var(--danger);font-weight:700;">${fmt(p.FlashPrice)}</td>
+              <td style="font-size:12px;">${p.FlashStart?new Date(p.FlashStart).toLocaleString('lo-LA'):'-'}</td>
+              <td style="font-size:12px;">${p.FlashEnd?new Date(p.FlashEnd).toLocaleString('lo-LA'):'-'}</td>
+              <td style="font-size:12px;">${p.FlashStock?(p.Sold||0)+' / '+p.FlashStock:'ບໍ່ຈຳກັດ'}</td>
+              <td>${st}</td>
+              <td>
+                <button class="mini-btn" onclick='openProductForm(${JSON.stringify(p).replace(/'/g,"&apos;")})'>✏️</button>
+                <button class="mini-btn" onclick="quickCancelFlash('${p.ID}')">🛑</button>
+              </td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted);">ຍັງບໍ່ມີສິນຄ້າໃນລາຍການ Flash Sale — ໄປທີ່ໜ້າ "ສິນຄ້າ" ແລ້ວແກ້ໄຂສິນຄ້າ ເພື່ອເປີດໃຊ້ Flash Sale</td></tr>`}
+          </tbody></table></div>
+      </div>`;
+  });
+}
+function quickCancelFlash(id){
+  if(!confirm('ຢຸດແຄມເປນ Flash Sale ຂອງສິນຄ້ານີ້?')) return;
+  const p = FLASH_PRODUCTS_CACHE_FIND(id);
+}
+function FLASH_PRODUCTS_CACHE_FIND(id){
+  adminCall('adminGetProducts').then(products=>{
+    const p = products.find(x=>x.ID===id);
+    if(!p) return;
+    p.FlashSale = 'No';
+    adminCall('adminSaveProduct', p).then(()=>{ toast('ຢຸດແຄມເປນແລ້ວ'); renderAdminFlashSale(); });
+  });
 }
 
 /* ---------- CATEGORIES ---------- */
