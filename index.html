@@ -310,6 +310,9 @@ a{color:inherit;text-decoration:none;}
   -webkit-overflow-scrolling:touch;
   max-height:calc(85vh - 54px);
 }
+#productDetailBody{ padding-bottom: 36px !important; }
+.pd-page:last-child{ padding-bottom: 12px; }
+
 @media(max-width:767px){
   #productDetailBody{ max-height:calc(80vh - 54px); }
 }
@@ -1214,7 +1217,7 @@ function buildProductPageHTML(p){
     </div>
     ${p.Description?`<div class="panel" style="margin-top:10px;"><h4>ລາຍລະອຽດ</h4><div style="font-size:13px;line-height:1.7;color:var(--text-muted);">${p.Description}</div></div>`:''}
     ${p.Specification?`<div class="panel"><h4>ຂໍ້ມູນສະເພາະ</h4><div style="font-size:13px;line-height:1.7;color:var(--text-muted);">${p.Specification}</div></div>`:''}
-    <div style="display:flex;gap:10px;margin-top:16px;">
+    <div style="display:flex;gap:10px;margin-top:16px;margin-bottom:10px;">
       <button class="btn btn-outline" style="flex:1;" onclick="addToCartFromPage(this)">ເພີ່ມໃສ່ກະຕ່າ</button>
       <button class="btn btn-primary" style="flex:1;" onclick="addToCartFromPage(this)">ຊື້ເລີຍ</button>
     </div>
