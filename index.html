@@ -282,9 +282,38 @@ a{color:inherit;text-decoration:none;}
   #productSheet .sheet-handle{ display:none; }
 }
 
-/* ---------- PRODUCT NAV (prev/next) ---------- */
-.pd-imgwrap{position:relative;width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;margin-bottom:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;touch-action:pan-y;}
-.pd-imgwrap img{width:100%;height:100%;object-fit:cover;}
+/* ---------- PRODUCT SHEET → POPUP ນ້ອຍລົງ ບົນມືຖື ---------- */
+@media(max-width:767px){
+  #productSheet{
+    left:50%; right:auto; bottom:auto; top:50%;
+    transform:translate(-50%,-45%) scale(.96);
+    width:92%; max-width:400px; max-height:80vh;
+    border-radius:var(--radius-lg);
+    opacity:0; pointer-events:none;
+    transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .28s;
+  }
+  #productSheet.show{
+    transform:translate(-50%,-50%) scale(1);
+    opacity:1; pointer-events:auto;
+  }
+  #productSheet .sheet-handle{ display:none; }
+  /* ຫຼຸດຄວາມສູງຮູບ ເພື່ອໃຫ້ popup ບໍ່ຍາວເກີນໄປ */
+  #productSheet .pd-imgwrap{ aspect-ratio: 4/3; }
+}
+
+/* ---------- PRODUCT FEED (scroll ຕໍ່ເນື່ອງ ລະຫວ່າງສິນຄ້າ) ---------- */
+#productSheet{
+  scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
+}
+.pd-page{
+  scroll-snap-align: start;
+}
+.pd-page + .pd-page{
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 8px solid var(--bg);
+}
 
 /* ---------- FORM ELEMENTS ---------- */
 .field{margin-bottom:14px;}
@@ -1150,118 +1179,132 @@ function catNameById(id){
 let currentProduct = null;
 let currentNavListKey = 'main';
 function navList(){ return NAV_LISTS[currentNavListKey] || DATA.products.map(p=>p.ID); }
-function navigateProduct(delta){
-  const list = navList();
-  if(!list.length || !currentProduct) return;
-  const idx = list.indexOf(currentProduct.ID);
-  let newIdx = (idx===-1?0:idx) + delta;
-  if(newIdx<0) newIdx = list.length-1;
-  if(newIdx>=list.length) newIdx = 0;
-  openProduct(list[newIdx], currentNavListKey);
-}
-let pdTouchStartY = 0;
-let pdTouchStartScrollTop = 0;
-let pdWheelLock = false;
 
-function bindProductSwipe(){
-  // ໃຊ້ #productSheet ເປັນຕົວກວດ scroll ແທ້ໆ (ມັນຄືອົງປະກອບທີ່ overflow-y:auto)
-  const sheet = document.getElementById('productSheet');
-  if(!sheet) return;
-
-  // ---------- ມືຖື: ປັດຂຶ້ນ/ລົງ ----------
-  sheet.ontouchstart = (e)=>{
-    pdTouchStartY = e.touches[0].clientY;
-    pdTouchStartScrollTop = sheet.scrollTop;
-  };
-  sheet.ontouchend = (e)=>{
-    const dy = e.changedTouches[0].clientY - pdTouchStartY;
-    const atTop    = pdTouchStartScrollTop <= 0;
-    const atBottom = pdTouchStartScrollTop + sheet.clientHeight >= sheet.scrollHeight - 2;
-    if(Math.abs(dy) < 60) return; // ປັດນ້ອຍເກີນໄປ ບໍ່ນັບ
-
-    if(dy > 0 && atTop){          // ປັດລົງ ຢູ່ເທິງສຸດ ➜ ສິນຄ້າກ່ອນໜ້າ
-      navigateProduct(-1);
-    } else if(dy < 0 && atBottom){ // ປັດຂຶ້ນ ຢູ່ລຸ່ມສຸດ ➜ ສິນຄ້າຕໍ່ໄປ
-      navigateProduct(1);
-    }
-  };
-
-  // ---------- PC: ໝູນລູກກິ້ງເມົາສ໌ ----------
-  sheet.onwheel = (e)=>{
-    const atTop    = sheet.scrollTop <= 0;
-    const atBottom = sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 2;
-
-    if((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)){
-      e.preventDefault();           // ຢູ່ຂອບແທ້ໆ ຈຶ່ງປ່ຽນສິນຄ້າ
-      if(pdWheelLock) return;
-      pdWheelLock = true;
-      e.deltaY < 0 ? navigateProduct(-1) : navigateProduct(1);
-      setTimeout(()=>{ pdWheelLock = false; }, 500);
-    }
-    // ຖ້າຍັງບໍ່ຮອດຂອບ ➜ ປ່ອຍໃຫ້ scroll ປົກກະຕິ (ອ່ານເນື້ອຫາ, ກົດປຸ່ມໄດ້)
-  };
-}
-
-function openProduct(id, listKey){
-  if(listKey) currentNavListKey = listKey;
-  currentProduct = DATA.products.find(p=>p.ID===id);
-  if(!currentProduct) return;
-  const p = currentProduct;
+/* ---------- ສ້າງ HTML ຂອງແຕ່ລະໜ້າສິນຄ້າ (page ໜຶ່ງໜ່ວຍໃນ feed) ---------- */
+function buildProductPageHTML(p){
   const flash = isFlashActive(p);
   const price = flash ? flashPrice(p) : Number(p.Price);
   const oldPriceForShow = flash ? Number(p.Price) : (p.OldPrice||0);
   const colors = (p.Colors||'').split(',').map(s=>s.trim()).filter(Boolean);
   const sizes = (p.Sizes||'').split(',').map(s=>s.trim()).filter(Boolean);
   const images = [p.ImageURL, ...(p.Images||'').split(',').map(s=>s.trim())].filter(Boolean);
-  document.getElementById('productDetailBody').innerHTML = `
-    ${flash ? `<div class="pd-flash-banner">⚡ Flash Sale ໝົດເວລາໃນ <span id="pdFlashCountdown">--:--:--</span></div>` : ''}
-    <div class="pd-imgwrap" id="pdImgWrap">
-      ${images.length ? `<img id="mainProductImage" src="${images[0]}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:60px;">🛍️</span>`}
+  return `
+  <div class="pd-page" data-id="${p.ID}" data-qty="1" data-color="${colors[0]||''}" data-size="${sizes[0]||''}">
+    ${flash ? `<div class="pd-flash-banner">⚡ Flash Sale ໝົດເວລາໃນ <span class="pdFlashCountdown">--:--:--</span></div>` : ''}
+    <div class="pd-imgwrap">
+      ${images.length ? `<img class="mainProductImage" src="${images[0]}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:60px;">🛍️</span>`}
     </div>
     ${images.length>1?`<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;">
-      ${images.map((img,idx)=>`<img src="${img}" onclick="document.getElementById('mainProductImage').src='${img}'" style="width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;border:2px solid ${idx===0?'var(--primary)':'transparent'};cursor:pointer;">`).join('')}
+      ${images.map((img)=>`<img src="${img}" onclick="setPageMainImage(this,'${img}')" style="width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer;">`).join('')}
     </div>`:'<div style="margin-bottom:14px;"></div>'}
     <h2 style="margin:0 0 4px;font-size:18px;">${p.Name}</h2>
     <div style="color:var(--text-muted);font-size:13px;margin-bottom:8px;">${p.ShortDesc||''}</div>
     <div class="price-row" style="margin-bottom:10px;"><span class="price" style="font-size:22px;">${fmt(price)} ₭</span>${oldPriceForShow?`<span class="old-price" style="margin-left:8px;">${fmt(oldPriceForShow)}</span>`:''}</div>
-    ${colors.length?`<div class="field"><label>ສີ</label><div class="tag-input-row" id="colorOpts">${colors.map((c,i)=>`<button class="btn btn-outline btn-sm opt-btn" data-type="color" data-val="${c}" onclick="selectOpt(this)">${c}</button>`).join('')}</div></div>`:''}
-    ${sizes.length?`<div class="field"><label>ຂະໜາດ</label><div class="tag-input-row" id="sizeOpts">${sizes.map((s,i)=>`<button class="btn btn-outline btn-sm opt-btn" data-type="size" data-val="${s}" onclick="selectOpt(this)">${s}</button>`).join('')}</div></div>`:''}
+    ${colors.length?`<div class="field"><label>ສີ</label><div class="tag-input-row">${colors.map((c,i)=>`<button class="btn ${i===0?'btn-primary':'btn-outline'} btn-sm opt-btn" data-type="color" data-val="${c}" onclick="selectPageOpt(this)">${c}</button>`).join('')}</div></div>`:''}
+    ${sizes.length?`<div class="field"><label>ຂະໜາດ</label><div class="tag-input-row">${sizes.map((s,i)=>`<button class="btn ${i===0?'btn-primary':'btn-outline'} btn-sm opt-btn" data-type="size" data-val="${s}" onclick="selectPageOpt(this)">${s}</button>`).join('')}</div></div>`:''}
     <div class="field"><label>ຈຳນວນ</label>
-      <div class="qty-ctrl"><button onclick="changeDetailQty(-1)">−</button><span id="detailQty">1</span><button onclick="changeDetailQty(1)">+</button></div>
+      <div class="qty-ctrl"><button onclick="changePageQty(this,-1)">−</button><span class="detailQty">1</span><button onclick="changePageQty(this,1)">+</button></div>
     </div>
     ${p.Description?`<div class="panel" style="margin-top:10px;"><h4>ລາຍລະອຽດ</h4><div style="font-size:13px;line-height:1.7;color:var(--text-muted);">${p.Description}</div></div>`:''}
     ${p.Specification?`<div class="panel"><h4>ຂໍ້ມູນສະເພາະ</h4><div style="font-size:13px;line-height:1.7;color:var(--text-muted);">${p.Specification}</div></div>`:''}
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn btn-outline" style="flex:1;" onclick="addToCart(false)">ເພີ່ມໃສ່ກະຕ່າ</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="addToCart(true)">ຊື້ເລີຍ</button>
+      <button class="btn btn-outline" style="flex:1;" onclick="addToCartFromPage(this)">ເພີ່ມໃສ່ກະຕ່າ</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="addToCartFromPage(this)">ຊື້ເລີຍ</button>
     </div>
-  `;
-  detailState = { qty:1, color:colors[0]||'', size:sizes[0]||'' };
-  openSheet('productSheet');
-  bindProductSwipe();
-  refreshFlashMiniTimers();
+  </div>`;
 }
-let detailState = { qty:1, color:'', size:'' };
-function selectOpt(btn){
+
+/* ---------- ຕໍ່ page ຕໍ່ໄປເຂົ້າ feed (preload ລ່ວງໜ້າ) ---------- */
+function appendNextFeedPage(){
+  const body = document.getElementById('productDetailBody');
+  const pages = body.querySelectorAll('.pd-page');
+  const lastPage = pages[pages.length-1];
+  if(!lastPage) return;
+  const list = navList();
+  if(!list.length) return;
+  const lastId = lastPage.dataset.id;
+  let idx = list.indexOf(lastId);
+  if(idx === -1) idx = 0;
+  let nextIdx = idx + 1;
+  if(nextIdx >= list.length) nextIdx = 0; // ວົນກັບຕົ້ນລາຍການ
+  const nextProduct = DATA.products.find(p=>p.ID===list[nextIdx]);
+  if(!nextProduct) return;
+  // ບໍ່ຕໍ່ຊ້ຳ ຖ້າສິນຄ້ານີ້ຖືກຕໍ່ໄວ້ແລ້ວ
+  if([...pages].some(pg=>pg.dataset.id===nextProduct.ID) && pages.length>1) return;
+  body.insertAdjacentHTML('beforeend', buildProductPageHTML(nextProduct));
+}
+
+/* ---------- ກວດວ່າ page ໃດກຳລັງເບິ່ງຢູ່ ຂະນະ scroll ---------- */
+function bindProductFeedScroll(){
+  const sheet = document.getElementById('productSheet');
+  if(!sheet) return;
+  sheet.onscroll = ()=>{
+    const body = document.getElementById('productDetailBody');
+    const pages = body.querySelectorAll('.pd-page');
+    const sheetTop = sheet.getBoundingClientRect().top;
+    let activePage = pages[0];
+    pages.forEach(pg=>{
+      const top = pg.getBoundingClientRect().top - sheetTop;
+      if(top <= 40) activePage = pg; // ຫົວ page ຜ່ານຂອບເທິງ ➜ ຖືວ່າເປັນ page ປັດຈຸບັນ
+    });
+    if(activePage && activePage.dataset.id !== (currentProduct && currentProduct.ID)){
+      currentProduct = DATA.products.find(p=>p.ID===activePage.dataset.id) || currentProduct;
+      refreshFlashMiniTimers();
+    }
+    // ຖ້າ page ປັດຈຸບັນເປັນ page ສຸດທ້າຍ ➜ ຕໍ່ສິນຄ້າໜ້າຕໍ່ໄປເພີ່ມ
+    if(activePage === pages[pages.length-1]) appendNextFeedPage();
+  };
+}
+
+/* ---------- ເລືອກສີ/ຂະໜາດ ພາຍໃນ page ນັ້ນໆ ---------- */
+function selectPageOpt(btn){
+  const page = btn.closest('.pd-page');
   const type = btn.dataset.type;
-  document.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b=>b.classList.remove('btn-primary'));
-  btn.classList.add('btn-primary');
-  detailState[type] = btn.dataset.val;
+  page.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b=>b.classList.remove('btn-primary'));
+  btn.classList.add('btn-outline'); // ຈະຖືກລົບອອກທັນທີຂ້າງລຸ່ມ ຖ້າເປັນອັນທີ່ຖືກເລືອກ
+  page.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b=>b.classList.add('btn-outline'));
+  btn.classList.remove('btn-outline'); btn.classList.add('btn-primary');
+  if(type==='color') page.dataset.color = btn.dataset.val;
+  else page.dataset.size = btn.dataset.val;
 }
-function changeDetailQty(d){
-  detailState.qty = Math.max(1, detailState.qty + d);
-  document.getElementById('detailQty').textContent = detailState.qty;
+function changePageQty(btn, delta){
+  const page = btn.closest('.pd-page');
+  let qty = Math.max(1, Number(page.dataset.qty||1) + delta);
+  page.dataset.qty = qty;
+  page.querySelector('.detailQty').textContent = qty;
 }
+function setPageMainImage(imgEl, src){
+  const page = imgEl.closest('.pd-page');
+  page.querySelector('.mainProductImage').src = src;
+}
+function addToCartFromPage(btn){
+  const page = btn.closest('.pd-page');
+  const p = DATA.products.find(x=>x.ID===page.dataset.id);
+  if(!p) return;
+  addItemToCart(p, Number(page.dataset.qty||1), page.dataset.color||'', page.dataset.size||'');
+  closeSheet('productSheet');
+  openCart();
+}
+
 function quickAdd(id){
   const p = DATA.products.find(x=>x.ID===id);
   const totalQty = addItemToCart(p, 1, '', '');
   toast('ເພີ່ມ ' + p.Name + ' ແລ້ວ (ຕອນນີ້ ' + totalQty + ' ອັນ ໃນກະຕ່າ)');
 }
-function addToCart(buyNow){
-  addItemToCart(currentProduct, detailState.qty, detailState.color, detailState.size);
-  closeSheet('productSheet');
-  openCart();
+
+function openProduct(id, listKey){
+  if(listKey) currentNavListKey = listKey;
+  currentProduct = DATA.products.find(p=>p.ID===id);
+  if(!currentProduct) return;
+  const body = document.getElementById('productDetailBody');
+  body.innerHTML = buildProductPageHTML(currentProduct);
+  openSheet('productSheet');
+  document.getElementById('productSheet').scrollTop = 0;
+  appendNextFeedPage();       // preload ສິນຄ້າຕໍ່ໄປໄວ້ລຸ່ມສຸດທັນທີ
+  bindProductFeedScroll();
+  refreshFlashMiniTimers();
 }
+
 function addItemToCart(p, qty, color, size){
   const unitPrice = flashPrice(p);
   const key = p.ID+'|'+color+'|'+size;
