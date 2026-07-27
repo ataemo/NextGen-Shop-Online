@@ -579,7 +579,6 @@ table tr:hover td{background:var(--primary-light);}
      ============================================================ -->
 <div id="flashPage" class="app hide">
   <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
-    <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="closeFlashPage()">←</button>
     <div class="brand" style="font-size:16px;color:#fff;">⚡Flash Sale</div>
     <div class="spacer"></div>
     <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
@@ -588,6 +587,15 @@ table tr:hover td{background:var(--primary-light);}
     <div class="flash-countdown" style="display:inline-block;background:linear-gradient(135deg,#FF3D3D,#FF7A00);color:#fff;" id="flashPageCountdown">⏱ 00:00:00</div>
   </div>
   <div class="grid" id="flashPageGrid"></div>
+
+  <div class="bottom-nav" id="bottomNavFlash">
+    <div class="nav-pill" id="navPillFlash"></div>
+    <button class="nav-item" onclick="closeFlashPage()"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
+    <button class="nav-item" onclick="goToCategoryFromFlash()"><span class="ic">🗂️</span>ໝວດໝູ່</button>
+    <button class="nav-item active"><span class="ic">⚡</span>Flash Sale</button>
+    <button class="nav-item" onclick="openCart()"><span class="ic">🛒</span>ກະຕ່າ</button>
+    <button class="nav-item" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
+  </div>
 </div>
 
 <!-- Side menu (3-dot) -->
@@ -968,6 +976,16 @@ function openFlashPage(){
   renderFlashPageProducts();
   updateFlashBannerCountdown();
   window.scrollTo(0,0);
+  setTimeout(positionFlashNavPill, 50);
+}
+function positionFlashNavPill(){
+  const active = document.querySelector('#bottomNavFlash .nav-item.active');
+  const pill = document.getElementById('navPillFlash');
+  if(active && pill){ pill.style.left = active.offsetLeft+'px'; pill.style.width = active.offsetWidth+'px'; }
+}
+function goToCategoryFromFlash(){
+  document.getElementById('flashPage').classList.add('hide');
+  openCategoryPage('all');
 }
 function closeFlashPage(){
   document.getElementById('flashPage').classList.add('hide');
