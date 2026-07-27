@@ -1192,6 +1192,13 @@ function renderProducts(){
     const matchSearch = !search || (p.Name||'').toLowerCase().includes(search);
     return matchCat && matchSearch;
   });
+
+  // ຖ້າຢູ່ໜ້າ "ສິນຄ້າແນະນຳ" (all + ບໍ່ໄດ້ຄົ້ນຫາ) ໃຫ້ສະແດງສະເພາະສິນຄ້າທີ່ແອັດມິນຕັ້ງເປັນ Featured
+  if(STATE.activeCategory==='all' && !search){
+    const featured = list.filter(p=>p.Featured==='Yes');
+    if(featured.length) list = featured; // ຖ້າມີສິນຄ້າແນະນຳ ໃຫ້ໃຊ້ອັນນັ້ນ, ຖ້າບໍ່ມີເລີຍ ໃຫ້ສະແດງທັງໝົດຄືເກົ່າ
+  }
+
   document.getElementById('prodTitle').textContent = STATE.activeCategory==='all' ? 'ສິນຄ້າແນະນຳ' : 'ຜົນການຄົ້ນຫາ';
   NAV_LISTS.main = list.map(p=>p.ID);
   const grid = document.getElementById('productGrid');
@@ -2261,11 +2268,12 @@ function renderAdminProducts(){
           <button class="btn btn-primary btn-sm" onclick="openProductForm()">+ ເພີ່ມສິນຄ້າ</button>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ຮູບ</th><th>ຊື່</th><th>ໝວດ</th><th>ລາຄາ</th><th>ສະຕັອກ</th><th>Flash</th><th>ສະຖານະ</th><th></th></tr></thead>
+          <thead><tr><th>ຮູບ</th><th>ຊື່</th><th>ໝວດ</th><th>ລາຄາ</th><th>ສະຕັອກ</th><th>⭐ ແນະນຳ</th><th>Flash</th><th>ສະຖານະ</th><th></th></tr></thead>
           <tbody>${products.map(p=>`
             <tr>
               <td><img src="${p.ImageURL||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--primary-light);"></td>
               <td>${p.Name}</td><td>${p.Category}</td><td>${fmt(p.Price)}</td><td>${p.Stock}</td>
+              <td><button class="mini-btn" onclick="toggleFeatured('${p.ID}', ${p.Featured==='Yes'?false:true})" style="font-size:18px;">${p.Featured==='Yes'?'⭐':'☆'}</button></td>
               <td>${p.FlashSale==='Yes' ? (isFlashActive(p)?'<span class="chip chip-shipping">🔥 ດຳເນີນ</span>':'<span class="chip chip-pending">ກຳນົດແລ້ວ</span>') : '<span style="color:var(--text-muted);font-size:11px;">-</span>'}</td>
               <td><span class="chip ${p.Status==='Hidden'?'chip-cancelled':'chip-completed'}">${p.Status||'Active'}</span></td>
               <td>
@@ -2298,6 +2306,7 @@ function openProductForm(existing){
       {key:'Colors', label:'ສີ (ຂັ້ນດ້ວຍ ,)'},
       {key:'Sizes', label:'ຂະໜາດ (ຂັ້ນດ້ວຍ ,)'},
       {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']},
+      {key:'Featured', label:'⭐ ສິນຄ້າແນະນຳ (ສະແດງໜ້າຫຼັກ)?', type:'select', options:['No','Yes']},
       {key:'FlashSale', label:'⚡ ເປີດໃຊ້ Flash Sale?', type:'select', options:['No','Yes']},
       {key:'FlashPrice', label:'⚡ ລາຄາ Flash Sale', type:'number'},
       {key:'FlashStart', label:'⚡ ວັນ-ເວລາ ເລີ່ມ', type:'datetime-local'},
@@ -2310,6 +2319,14 @@ function openProductForm(existing){
 function deleteProduct(id){
   if(!confirm('ຢືນຢັນລຶບສິນຄ້ານີ້?')) return;
   adminCall('adminDeleteProduct', id).then(()=>{ toast('ລຶບສຳເລັດ'); renderAdminProducts(); });
+}
+function toggleFeatured(id, val){
+  adminCall('adminGetProducts').then(products=>{
+    const p = products.find(x=>x.ID===id);
+    if(!p) return;
+    p.Featured = val ? 'Yes' : 'No';
+    adminCall('adminSaveProduct', p).then(()=>{ toast(val?'ຕັ້ງເປັນສິນຄ້າແນະນຳແລ້ວ':'ຖອດອອກຈາກແນະນຳແລ້ວ'); renderAdminProducts(); });
+  });
 }
 
 /* ---------- FLASH SALE (ຈັດການແຄມເປນ) ---------- */
