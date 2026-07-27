@@ -2,7 +2,7 @@
 // ໜ້າທີ່ຫຼັກ: ເຮັດໃຫ້ browser ຮູ້ວ່າເວັບນີ້ "ຕິດຕັ້ງເປັນແອັບໄດ້" (installable)
 // ແລະ cache ໄຟລ໌ພື້ນຖານໄວ້ໃຫ້ເປີດໄດ້ໄວຂຶ້ນ / ເປີດໄດ້ຊົ່ວຄາວເມື່ອເນັດອ່ອນ
 
-const CACHE_NAME = 'lao-shop-cache-v1';
+const CACHE_NAME = 'lao-shop-cache-v2';
 const APP_SHELL = [
   './',
   './index.html',
