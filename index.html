@@ -335,12 +335,13 @@ a{color:inherit;text-decoration:none;}
 }
 .bottom-nav .nav-item.active{color:var(--primary-dark);}
 .bottom-nav .nav-item .ic{
-  font-size:22px;   /* ← ຈາກ 26px */
-  height:28px;      /* ← ຈາກ 34px */
-  width:28px;       /* ← ຈາກ 34px */
+  font-size:22px;
+  height:28px;
+  width:28px;
   display:flex;
   align-items:center;
   justify-content:center;
+  position:relative;
 }
 .bottom-nav .nav-item .ic img{
   width:60px;
@@ -720,7 +721,7 @@ table tr:hover td{background:var(--primary-light);}
     <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" data-tab="category" onclick="openCategoryPage('all')"><span class="ic">🗂️</span>ໝວດໝູ່</button>
     <button class="nav-item nav-item-flash" data-tab="flash" onclick="openFlashPage()"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png"></span></button>
-    <button class="nav-item" data-tab="cart" onclick="openCart()"><span class="ic">🛒</span>ກະຕ່າ</button>
+    <button class="nav-item" data-tab="cart" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNav" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" data-tab="orders" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
 </div>
@@ -751,7 +752,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="nav-pill" id="navPillCat"></div>
     <button class="nav-item" onclick="closeCategoryPage()"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item active"><span class="ic">🗂️</span>ໝວດໝູ່</button>
-    <button class="nav-item" onclick="openCart()"><span class="ic">🛒</span>ກະຕ່າ</button>
+    <button class="nav-item" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNavCat" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
 </div>
@@ -781,7 +782,7 @@ table tr:hover td{background:var(--primary-light);}
     <button class="nav-item" onclick="closeFlashPage()"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" onclick="goToCategoryFromFlash()"><span class="ic">🗂️</span>ໝວດໝູ່</button>
     <button class="nav-item nav-item-flash active"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png"></span></button>
-    <button class="nav-item" onclick="openCart()"><span class="ic">🛒</span>ກະຕ່າ</button>
+    <button class="nav-item" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNavFlash" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
 </div>
@@ -1550,7 +1551,14 @@ function addItemToCart(p, qty, color, size){
 }
 function updateCartBadge(){
   const count = STATE.cart.reduce((s,i)=>s+i.qty,0);
-  [document.getElementById('cartBadge'), document.getElementById('cartBadge2'), document.getElementById('cartBadge3')].forEach(badge=>{
+  [
+    document.getElementById('cartBadge'),
+    document.getElementById('cartBadge2'),
+    document.getElementById('cartBadge3'),
+    document.getElementById('cartBadgeNav'),
+    document.getElementById('cartBadgeNavCat'),
+    document.getElementById('cartBadgeNavFlash')
+  ].forEach(badge=>{
     if(!badge) return;
     if(count>0){ badge.textContent=count; badge.classList.remove('hide'); } else badge.classList.add('hide');
   });
