@@ -197,6 +197,10 @@ a{color:inherit;text-decoration:none;}
 .flash-section{margin:0 16px 14px;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-soft);background:linear-gradient(135deg,#FF3D3D,#FF7A00);}
 .flash-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;}
 .flash-title{color:#fff;font-family:var(--font-display);font-weight:800;font-size:16px;display:flex;align-items:center;gap:6px;}
+.flash-title-icon{
+  height:50px;
+  object-fit:contain;
+}
 .flash-title .see-all{font-size:11px;font-weight:600;background:rgba(255,255,255,.25);padding:4px 10px;border-radius:20px;margin-left:8px;}
 .flash-countdown{background:rgba(0,0,0,.28);color:#fff;font-family:var(--font-display);font-weight:800;font-size:14px;padding:6px 12px;border-radius:10px;letter-spacing:1px;}
 .flash-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 14px 14px;scrollbar-width:none;}
@@ -616,7 +620,7 @@ table tr:hover td{background:var(--primary-light);}
 
   <div class="flash-section hide" id="flashSection">
     <div class="flash-header">
-      <div class="flash-title">⚡Flash Sale <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
+      <div class="flash-title"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flash-title-icon"> <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
       <div class="flash-countdown" id="flashCountdown">00:00:00</div>
     </div>
     <div class="flash-scroll" id="flashScroll"></div>
