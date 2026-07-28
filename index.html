@@ -663,15 +663,15 @@ table tr:hover td{background:var(--primary-light);}
     <div class="brand"><img id="hLogo" src="" class="hide"><span id="hName">LAO SHOP</span></div>
     <div class="spacer"></div>
     <div class="desktop-nav" id="desktopNav">
-      <button class="dn-item active" onclick="switchTab('home')">🏠 ໜ້າຫຼັກ</button>
-      <button class="dn-item" onclick="openCategoryPage('all')">🗂️ ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item active" onclick="switchTab('home')"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
+      <button class="dn-item" onclick="openCategoryPage('all')"><span data-icon-key="category">🗂️</span> ສິນຄ້າທັງໝົດ</button>
       <button class="dn-item dn-item-flash" onclick="openFlashPage()"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="dn-flash-icon"></button>
-      <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
+      <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
-    <button class="icon-btn" onclick="openSearch()">🔍</button>
-    <button class="icon-btn" id="topCartBtn" onclick="openCart()">🛒<span id="cartBadge" class="badge hide">0</span></button>
-    <button class="icon-btn" onclick="openSideMenu()">⋮</button>
+    <button class="icon-btn" onclick="openSearch()"><span data-icon-key="search">🔍</span></button>
+    <button class="icon-btn" id="topCartBtn" onclick="openCart()"><span data-icon-key="cart">🛒</span><span id="cartBadge" class="badge hide">0</span></button>
+    <button class="icon-btn" onclick="openSideMenu()"><span data-icon-key="menu">⋮</span></button>
   </div>
   <div class="search-bar hide" id="searchBar">
     <input id="searchInput" placeholder="ຄົ້ນຫາສິນຄ້າ..." oninput="renderProducts()">
@@ -734,9 +734,9 @@ table tr:hover td{background:var(--primary-light);}
     <div class="brand" style="font-size:16px;" id="catPageTitle">ສິນຄ້າທັງໝົດ</div>
     <div class="spacer"></div>
     <div class="desktop-nav">
-      <button class="dn-item" onclick="closeCategoryPage()">🏠 ໜ້າຫຼັກ</button>
-      <button class="dn-item active">🗂️ ສິນຄ້າທັງໝົດ</button>
-      <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
+      <button class="dn-item" onclick="closeCategoryPage()"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
+      <button class="dn-item active"><span data-icon-key="category">🗂️</span> ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
     <button class="icon-btn" onclick="openCart()">🛒<span id="cartBadge2" class="badge hide">0</span></button>
@@ -765,9 +765,9 @@ table tr:hover td{background:var(--primary-light);}
     <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon"></div>
     <div class="spacer"></div>
     <div class="desktop-nav flash-desktop-nav">
-      <button class="dn-item" onclick="closeFlashPage()">🏠 ໜ້າຫຼັກ</button>
-      <button class="dn-item" onclick="goToCategoryFromFlash()">🗂️ ສິນຄ້າທັງໝົດ</button>
-      <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
+      <button class="dn-item" onclick="closeFlashPage()"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
+      <button class="dn-item" onclick="goToCategoryFromFlash()"><span data-icon-key="category">🗂️</span> ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
     <button class="icon-btn" style="background:#fff;color:#FF3D3D;box-shadow:0 4px 12px rgba(0,0,0,.25);" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
@@ -790,12 +790,12 @@ table tr:hover td{background:var(--primary-light);}
 <!-- Side menu (3-dot) -->
 <div class="side-menu" id="sideMenu">
   <h4>🛍️ LAO SHOP</h4>
-  <button class="item" onclick="toggleTheme()"><span class="ic">🌗</span> <span id="themeLabel">ໂໝດມືດ / ໂໝດແຈ້ງ</span></button>
+  <button class="item" onclick="toggleTheme()"><span class="ic" data-icon-key="theme">🌗</span> <span id="themeLabel">ໂໝດມືດ / ໂໝດແຈ້ງ</span></button>
   <button class="item" onclick="openFlashPage()"><span class="ic">⚡</span> Flash Sale</button>
   <button class="item" onclick="openMyOrders()"><span class="ic">📦</span> ຕິດຕາມອໍເດີ</button>
-  <button class="item"><span class="ic">📞</span> <span id="sideContact">ຕິດຕໍ່ຮ້ານ</span></button>
+  <button class="item"><span class="ic" data-icon-key="contact">📞</span> <span id="sideContact">ຕິດຕໍ່ຮ້ານ</span></button>
   <hr>
-  <button class="item" onclick="openAdminLogin()" style="color:var(--primary);"><span class="ic">🔐</span> ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ (Admin)</button>
+  <button class="item" onclick="openAdminLogin()" style="color:var(--primary);"><span class="ic" data-icon-key="admin">🔐</span> ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ (Admin)</button>
 </div>
 
 <!-- Product Detail Sheet -->
@@ -1263,13 +1263,52 @@ function silentRefreshData(){
 }
 setInterval(silentRefreshData, 15000);
 
+const GOOGLE_FONT_MAP = {
+  poppins:  { css:"'Poppins','Noto Sans Lao',sans-serif",  gf:'Poppins:wght@400;500;600;700;800' },
+  quicksand:{ css:"'Quicksand','Noto Sans Lao',sans-serif",gf:'Quicksand:wght@400;500;600;700' },
+  baloo2:   { css:"'Baloo 2','Noto Sans Lao',sans-serif",  gf:'Baloo+2:wght@400;500;600;700;800' },
+  nunito:   { css:"'Nunito','Noto Sans Lao',sans-serif",   gf:'Nunito:wght@400;600;700;800' },
+  mali:     { css:"'Mali','Noto Sans Lao',sans-serif",     gf:'Mali:wght@400;500;600;700' }
+};
+function loadGoogleFont(key){
+  const f = GOOGLE_FONT_MAP[key] || GOOGLE_FONT_MAP.poppins;
+  let link = document.getElementById('dynFontLink');
+  if(!link){ link=document.createElement('link'); link.id='dynFontLink'; link.rel='stylesheet'; document.head.appendChild(link); }
+  link.href = 'https://fonts.googleapis.com/css2?family='+f.gf+'&display=swap';
+  document.documentElement.style.setProperty('--font-display', f.css);
+}
+function applyIconSettings(){
+  const s = DATA.settings;
+  const map = {
+    home:s.iconHome||'🏠', category:s.iconCategory||'🗂️', cart:s.iconCart||'🛒',
+    orders:s.iconOrders||'📦', search:s.iconSearch||'🔍', menu:s.iconMenu||'⋮',
+    theme:s.iconTheme||'🌗', contact:s.iconContact||'📞', admin:s.iconAdmin||'🔐'
+  };
+  document.querySelectorAll('[data-icon-key]').forEach(el=>{
+    const key = el.dataset.iconKey;
+    if(map[key]===undefined) return;
+    [...el.childNodes].forEach(n=>{ if(n.nodeType===3) n.remove(); });
+    el.insertBefore(document.createTextNode(map[key]), el.firstChild);
+  });
+  if(s.flashTitleIconUrl) document.querySelectorAll('.js-flash-title-icon').forEach(img=>img.src=s.flashTitleIconUrl);
+  if(s.flashNavIconUrl) document.querySelectorAll('.js-flash-nav-icon').forEach(img=>img.src=s.flashNavIconUrl);
+}
 function applySettingsToUI(){
   const s = DATA.settings;
   document.getElementById('hName').textContent = s.storeName || 'LAO SHOP';
   if(s.logoUrl){ document.getElementById('hLogo').src = s.logoUrl; document.getElementById('hLogo').classList.remove('hide'); }
   if(s.primaryColor) document.documentElement.style.setProperty('--primary', s.primaryColor);
+  if(s.primaryDarkColor) document.documentElement.style.setProperty('--primary-dark', s.primaryDarkColor);
   if(s.secondaryColor) document.documentElement.style.setProperty('--accent', s.secondaryColor);
+  if(s.accentDarkColor) document.documentElement.style.setProperty('--accent-dark', s.accentDarkColor);
   if(s.bgColor) document.documentElement.style.setProperty('--bg', s.bgColor);
+  if(s.textColor) document.documentElement.style.setProperty('--text', s.textColor);
+  if(s.textMutedColor) document.documentElement.style.setProperty('--text-muted', s.textMutedColor);
+  if(s.dangerColor) document.documentElement.style.setProperty('--danger', s.dangerColor);
+  if(s.successColor) document.documentElement.style.setProperty('--success', s.successColor);
+  if(s.cardRadius) document.documentElement.style.setProperty('--radius-lg', s.cardRadius+'px');
+  loadGoogleFont(s.fontChoice||'poppins');
+  applyIconSettings();
   document.getElementById('sideContact').textContent = 'ຕິດຕໍ່: ' + (s.contactPhone||'-');
 }
 
@@ -3124,32 +3163,73 @@ function deleteUser(username){
 /* ---------- SETTINGS ---------- */
 function renderAdminSettings(){
   adminCall('adminGetSettings').then(s=>{
-    const fields = [
-      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນແຕ່ລະລາຍການດ້ວຍ | )'],
-      ['primaryColor','ສີຫຼັກ (Primary)'], ['secondaryColor','ສີຮອງ (Accent)'], ['bgColor','ສີພື້ນຫຼັງ'],
+    const basicFields = [
+      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
+      ['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນດ້ວຍ | )'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
       ['contactPhone','ເບີໂທຕິດຕໍ່'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ Facebook'],
       ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່'],
-      ['slackWebhookUrl','🔔 Slack Webhook URL (ແຈ້ງເຕືອນອໍເດີໃໝ່ຜ່ານ Slack)']   // 👈 ເພີ່ມແຖວນີ້
+      ['slackWebhookUrl','🔔 Slack Webhook URL']
+    ];
+    const colorFields = [
+      ['primaryColor','ສີຫຼັກ (Primary)'], ['primaryDarkColor','ສີຫຼັກ ໂຕນເຂັ້ມ'],
+      ['secondaryColor','ສີຮອງ (Accent)'], ['accentDarkColor','ສີຮອງ ໂຕນເຂັ້ມ'],
+      ['bgColor','ສີພື້ນຫຼັງ'], ['textColor','ສີໂຕໜັງສືຫຼັກ'], ['textMutedColor','ສີໂຕໜັງສືອ່ອນ'],
+      ['dangerColor','ສີແດງ (ແຈ້ງເຕືອນ)'], ['successColor','ສີຂຽວ (ສຳເລັດ)']
+    ];
+    const iconFields = [
+      ['iconHome','🏠 ໜ້າຫຼັກ'], ['iconCategory','🗂️ ໝວດໝູ່'], ['iconCart','🛒 ກະຕ່າ'],
+      ['iconOrders','📦 ອໍເດີ'], ['iconSearch','🔍 ຄົ້ນຫາ'], ['iconMenu','⋮ ເມນູ'],
+      ['iconTheme','🌗 ສະຫຼັບໂໝດ'], ['iconContact','📞 ຕິດຕໍ່'], ['iconAdmin','🔐 Admin']
     ];
     document.getElementById('adminContent').innerHTML = `
-      <div class="panel">
-        <h4>ຕັ້ງຄ່າຮ້ານຄ້າ</h4>
-        ${fields.map(([key,label])=>{
-          const isColor = key.toLowerCase().includes('color');
-          return `<div class="field"><label>${label}</label><input id="set_${key}" type="${isColor?'color':'text'}" value="${s[key]||''}"></div>`;
-        }).join('')}
-        <button class="btn btn-primary btn-block" onclick="saveAllSettings()">ບັນທຶກການຕັ້ງຄ່າ</button>
-      </div>`;
+      <div class="panel"><h4>ຂໍ້ມູນຮ້ານຄ້າ</h4>
+        ${basicFields.map(([k,l])=>`<div class="field"><label>${l}</label><input id="set_${k}" value="${s[k]||''}"></div>`).join('')}
+      </div>
+
+      <div class="panel"><h4>🎨 ສີ ແລະ ຮູບແບບ (Theme)</h4>
+        <div class="row2">
+          ${colorFields.map(([k,l])=>`<div class="field"><label>${l}</label><input id="set_${k}" type="color" value="${s[k]||'#146356'}"></div>`).join('')}
+        </div>
+        <div class="field"><label>ຄວາມມົນຂອງມຸມກ່ອງ (px)</label><input id="set_cardRadius" type="range" min="0" max="30" value="${s.cardRadius||22}" oninput="document.getElementById('radiusVal').textContent=this.value"> <span id="radiusVal">${s.cardRadius||22}</span></div>
+        <div class="field"><label>ຮູບແບບໂຕໜັງສື (Font)</label>
+          <select id="set_fontChoice">
+            <option value="poppins" ${s.fontChoice==='poppins'?'selected':''}>Poppins (ມາດຕະຖານ)</option>
+            <option value="quicksand" ${s.fontChoice==='quicksand'?'selected':''}>Quicksand (ໂຕມົນ ນຸ້ມ)</option>
+            <option value="baloo2" ${s.fontChoice==='baloo2'?'selected':''}>Baloo 2 (ໜາ ໜ້າຮັກ)</option>
+            <option value="nunito" ${s.fontChoice==='nunito'?'selected':''}>Nunito (ທັນສະໄໝ)</option>
+            <option value="mali" ${s.fontChoice==='mali'?'selected':''}>Mali (ລາຍມື)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel"><h4>🔣 ໄອຄອນນຳທາງ (ພິມ Emoji ແທນໄດ້)</h4>
+        <div class="row2">
+          ${iconFields.map(([k,l])=>`<div class="field"><label>${l}</label><input id="set_${k}" value="${s[k]||''}" style="font-size:18px;text-align:center;"></div>`).join('')}
+        </div>
+        <div class="field"><label>⚡ ຮູບໄອຄອນ Flash Sale (ໂລໂກ້ໃຫຍ່)</label><input id="set_flashTitleIconUrl" value="${s.flashTitleIconUrl||''}"></div>
+        <div class="field"><label>⚡ ຮູບໄອຄອນ Flash Sale (Bottom Nav)</label><input id="set_flashNavIconUrl" value="${s.flashNavIconUrl||''}"></div>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="saveAllSettings()">💾 ບັນທຶກການຕັ້ງຄ່າທັງໝົດ</button>
+    `;
   });
 }
 function saveAllSettings(){
-  const fields = ['storeName','logoUrl','bannerText','primaryColor','secondaryColor','bgColor','currency','freeShippingMin','defaultShippingFee','bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','contactEmail','facebookUrl','addressText','footerText','adminNotifyEmail','slackWebhookUrl'];
+  const allKeys = [
+    'storeName','logoUrl','bannerText','promoTicker','currency','freeShippingMin','defaultShippingFee',
+    'bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','contactEmail','facebookUrl',
+    'addressText','footerText','adminNotifyEmail','slackWebhookUrl',
+    'primaryColor','primaryDarkColor','secondaryColor','accentDarkColor','bgColor','textColor','textMutedColor',
+    'dangerColor','successColor','cardRadius','fontChoice',
+    'iconHome','iconCategory','iconCart','iconOrders','iconSearch','iconMenu','iconTheme','iconContact','iconAdmin',
+    'flashTitleIconUrl','flashNavIconUrl'
+  ];
   const obj = {};
-  fields.forEach(f=>{ const el = document.getElementById('set_'+f); if(el) obj[f]=el.value; });
+  allKeys.forEach(k=>{ const el=document.getElementById('set_'+k); if(el) obj[k]=el.value; });
   adminCall('adminUpdateSettings', obj).then(()=>{
-    toast('ບັນທຶກການຕັ້ງຄ່າສຳເລັດ! ກຳລັງໂຫຼດຄືນໃໝ່...');
+    toast('ບັນທຶກສຳເລັດ! ກຳລັງໂຫຼດຄືນ...');
     gsRun('getInitData').then(d=>{ DATA=d; applySettingsToUI(); });
   });
 }
