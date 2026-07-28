@@ -583,6 +583,12 @@ a{color:inherit;text-decoration:none;}
   .admin-side{width:270px;}
   .admin-nav-item{font-size:15px;padding:8px 14px;gap:12px;}
   .admin-nav-item .ic{width:24px;font-size:20px;}
+
+  /* 👇 ເພີ່ມແຖວນີ້ ເພື່ອຂະຫຍາຍຮູບໃນຕາຕະລາງສິນຄ້າ */
+  .table-wrap table td img{
+    width:64px !important;
+    height:64px !important;
+  }
 }
 .admin-main{flex:1;padding:22px 24px;overflow-x:hidden;min-width:0;}
 .admin-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
@@ -613,6 +619,9 @@ table{width:100%;border-collapse:collapse;font-size:13px;}
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
   width:100%;
+}
+.table-wrap img{
+  max-width:none;
 }
 .table-wrap table{
   min-width:640px; /* ບັງຄັບໃຫ້ຕາຕະລາງມີຄວາມກວ້າງຂັ້ນຕ່ຳ ເພື່ອໃຫ້ເລື່ອນໄດ້ ແທນທີ່ຈະບີບອັດຄໍລຳ */
@@ -936,7 +945,7 @@ table tr:hover td{background:var(--primary-light);}
   <div class="admin-main">
     <div class="admin-topbar">
       <div style="display:flex;align-items:center;gap:10px;">
-        <button class="icon-btn" id="adminMenuBtn" onclick="document.getElementById('adminSide').classList.toggle('show')">☰</button>
+        <button class="icon-btn" id="adminMenuBtn" onclick="document.getElementById('adminSide').classList.toggle('show'); document.getElementById('overlay').classList.toggle('show');">☰</button>
         <h2 id="adminPageTitle">Dashboard</h2>
       </div>
       <div style="font-size:13px;color:var(--text-muted);">👤 <span id="adminUserLabel"></span></div>
