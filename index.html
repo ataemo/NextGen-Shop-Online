@@ -1992,6 +1992,7 @@ function openAdminTab(tab){
   stopOrdersAutoRefresh();
   STATE.adminTab = tab;
   document.getElementById('adminSide').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
   renderAdminNav();
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
@@ -2623,34 +2624,37 @@ function renderAdminProducts(){
   });
 }
 function openProductForm(existing){
-  openCrudForm({
-    saveFn:'adminSaveProduct', onDone:renderAdminProducts,
-    fields:[
-      {key:'ID', label:'ID', readonly:true},
-      {key:'Name', label:'ຊື່ສິນຄ້າ'},
-      {key:'Category', label:'ໝວດໝູ່'},
-      {key:'ShortDesc', label:'ຄຳອະທິບາຍສັ້ນ'},
-      {key:'Description', label:'ລາຍລະອຽດ', type:'textarea'},
-      {key:'Specification', label:'ຂໍ້ມູນສະເພາະ', type:'textarea'},
-      {key:'Price', label:'ລາຄາ', type:'number'},
-      {key:'OldPrice', label:'ລາຄາເກົ່າ', type:'number'},
-      {key:'Discount', label:'ສ່ວນຫຼຸດ (%)', type:'number'},
-      {key:'Badge', label:'Badge', type:'select', options:['','New','Hot','Sale','Best Seller','Limited']},
-      {key:'Stock', label:'ຈຳນວນສະຕັອກ', type:'number'},
-      {key:'ImageURL', label:'ລິ້ງຮູບພາບ (Google Drive/URL)'},
-      {key:'Images', label:'ຮູບເພີ່ມເຕີມ (ຂັ້ນດ້ວຍ ,)'},
-      {key:'Colors', label:'ສີ (ຂັ້ນດ້ວຍ ,)'},
-      {key:'Sizes', label:'ຂະໜາດ (ຂັ້ນດ້ວຍ ,)'},
-      {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']},
-      {key:'Featured', label:'⭐ ສິນຄ້າແນະນຳ (ສະແດງໜ້າຫຼັກ)?', type:'select', options:['No','Yes']},
-      {key:'FlashSale', label:'⚡ ເປີດໃຊ້ Flash Sale?', type:'select', options:['No','Yes']},
-      {key:'FlashPrice', label:'⚡ ລາຄາ Flash Sale', type:'number'},
-      {key:'FlashStart', label:'⚡ ວັນ-ເວລາ ເລີ່ມ', type:'datetime-local'},
-      {key:'FlashEnd', label:'⚡ ວັນ-ເວລາ ສິ້ນສຸດ', type:'datetime-local'},
-      {key:'FlashStock', label:'⚡ ໂຄຕ້າ Flash Sale (ປະໄວ້ວ່າງ = ບໍ່ຈຳກັດ)', type:'number'},
-      {key:'FlashSold', label:'⚡ ຂາຍໄປແລ້ວໃນຮອບນີ້ (ຕັ້ງ 0 ເມື່ອເປີດແຄມເປນໃໝ່)', type:'number'}
-    ]
-  }, existing);
+  adminCall('adminGetCategories').then(cats=>{
+    const catOptions = cats.map(c=>c.Name);
+    openCrudForm({
+      saveFn:'adminSaveProduct', onDone:renderAdminProducts,
+      fields:[
+        {key:'ID', label:'ID', readonly:true},
+        {key:'Name', label:'ຊື່ສິນຄ້າ'},
+        {key:'Category', label:'ໝວດໝູ່', type:'select', options:catOptions},
+        {key:'ShortDesc', label:'ຄຳອະທິບາຍສັ້ນ'},
+        {key:'Description', label:'ລາຍລະອຽດ', type:'textarea'},
+        {key:'Specification', label:'ຂໍ້ມູນສະເພາະ', type:'textarea'},
+        {key:'Price', label:'ລາຄາ', type:'number'},
+        {key:'OldPrice', label:'ລາຄາເກົ່າ', type:'number'},
+        {key:'Discount', label:'ສ່ວນຫຼຸດ (%)', type:'number'},
+        {key:'Badge', label:'Badge', type:'select', options:['','New','Hot','Sale','Best Seller','Limited']},
+        {key:'Stock', label:'ຈຳນວນສະຕັອກ', type:'number'},
+        {key:'ImageURL', label:'ລິ້ງຮູບພາບ (Google Drive/URL)'},
+        {key:'Images', label:'ຮູບເພີ່ມເຕີມ (ຂັ້ນດ້ວຍ ,)'},
+        {key:'Colors', label:'ສີ (ຂັ້ນດ້ວຍ ,)'},
+        {key:'Sizes', label:'ຂະໜາດ (ຂັ້ນດ້ວຍ ,)'},
+        {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']},
+        {key:'Featured', label:'⭐ ສິນຄ້າແນະນຳ (ສະແດງໜ້າຫຼັກ)?', type:'select', options:['No','Yes']},
+        {key:'FlashSale', label:'⚡ ເປີດໃຊ້ Flash Sale?', type:'select', options:['No','Yes']},
+        {key:'FlashPrice', label:'⚡ ລາຄາ Flash Sale', type:'number'},
+        {key:'FlashStart', label:'⚡ ວັນ-ເວລາ ເລີ່ມ', type:'datetime-local'},
+        {key:'FlashEnd', label:'⚡ ວັນ-ເວລາ ສິ້ນສຸດ', type:'datetime-local'},
+        {key:'FlashStock', label:'⚡ ໂຄຕ້າ Flash Sale (ປະໄວ້ວ່າງ = ບໍ່ຈຳກັດ)', type:'number'},
+        {key:'FlashSold', label:'⚡ ຂາຍໄປແລ້ວໃນຮອບນີ້ (ຕັ້ງ 0 ເມື່ອເປີດແຄມເປນໃໝ່)', type:'number'}
+      ]
+    }, existing);
+  });
 }
 function deleteProduct(id){
   if(!confirm('ຢືນຢັນລຶບສິນຄ້ານີ້?')) return;
