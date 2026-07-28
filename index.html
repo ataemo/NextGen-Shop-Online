@@ -200,6 +200,16 @@ a{color:inherit;text-decoration:none;}
 .flash-title-icon{
   height:50px;
   object-fit:contain;
+  flex-shrink:0;
+}
+@media(max-width:899px){
+  .flash-title-icon{
+    height:35px;
+  }
+  .flash-header{
+    flex-wrap:nowrap;
+    gap:6px;
+  }
 }
 .flash-title .see-all{font-size:11px;font-weight:600;background:rgba(255,255,255,.25);padding:4px 10px;border-radius:20px;margin-left:8px;}
 .flash-countdown{background:rgba(0,0,0,.28);color:#fff;font-family:var(--font-display);font-weight:800;font-size:14px;padding:6px 12px;border-radius:10px;letter-spacing:1px;}
