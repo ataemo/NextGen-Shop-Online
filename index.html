@@ -1920,6 +1920,7 @@ function doAdminLogin(){
   });
 }
 function doAdminLogout(){
+  stopGlobalOrderWatcher();   // 👈 ເພີ່ມແຖວນີ້
   gsRun('adminLogout', STATE.adminToken).finally(()=>{
     STATE.adminToken=null; localStorage.removeItem('lao_admin_token');
     localStorage.removeItem('lao_admin_role'); localStorage.removeItem('lao_admin_name');
@@ -1927,6 +1928,7 @@ function doAdminLogout(){
   });
 }
 function backToStore(){
+  stopGlobalOrderWatcher();   // 👈 ເພີ່ມແຖວນີ້
   document.getElementById('adminShell').classList.add('hide');
   document.getElementById('storefront').classList.remove('hide');
   gsRun('getInitData').then(d=>{
@@ -1967,12 +1969,14 @@ function enterAdmin(){
   document.getElementById('adminUserLabel').textContent = STATE.adminUser + ' ('+STATE.adminRole+')';
   renderAdminNav();
   openAdminTab('dashboard');
+  startGlobalOrderWatcher();   // 👈 ເພີ່ມແຖວນີ້
 }
 function renderAdminNav(){
   const menu = ADMIN_MENU.filter(m=>m.roles.includes(STATE.adminRole));
   document.getElementById('adminNavList').innerHTML = menu.map(m=>`
-    <button class="admin-nav-item ${STATE.adminTab===m.id?'active':''}" onclick="openAdminTab('${m.id}')">
-      <span class="ic">${m.ic}</span> ${m.label}
+    <button class="admin-nav-item ${STATE.adminTab===m.id?'active':''}" onclick="openAdminTab('${m.id}')" style="justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:10px;"><span class="ic">${m.ic}</span> ${m.label}</span>
+      ${m.id==='orders' ? `<span id="ordersNotifyBadge" class="badge hide" style="position:static;">0</span>` : ''}
     </button>`).join('');
 }
 let adminTabCache = {};
@@ -2408,6 +2412,54 @@ function startOrdersAutoRefresh(){
   }, 8000);
 }
 function stopOrdersAutoRefresh(){ if(ordersAutoRefreshTimer){ clearInterval(ordersAutoRefreshTimer); ordersAutoRefreshTimer=null; } }
+
+/* ============================================================
+   🔔 GLOBAL ORDER NOTIFICATION WATCHER (ເຮັດວຽກທຸກໜ້າໃນ Admin)
+   ============================================================ */
+let globalOrderWatcherTimer = null;
+let lastKnownOrderCount = Number(localStorage.getItem('lao_last_order_count') || 0);
+
+function startGlobalOrderWatcher(){
+  stopGlobalOrderWatcher();
+  checkNewOrders();
+  globalOrderWatcherTimer = setInterval(checkNewOrders, 15000); // ກວດທຸກ 15 ວິນາທີ
+}
+function stopGlobalOrderWatcher(){
+  if(globalOrderWatcherTimer){ clearInterval(globalOrderWatcherTimer); globalOrderWatcherTimer=null; }
+}
+function checkNewOrders(){
+  if(!STATE.adminToken) return;
+  adminCall('adminGetDashboardRaw').then(raw=>{
+    updateOrdersBadge(raw.statusCounts.pending);
+    const totalOrders = raw.orders.length;
+    if(lastKnownOrderCount && totalOrders > lastKnownOrderCount){
+      playNotifySound();
+      toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+(totalOrders-lastKnownOrderCount)+' ລາຍການ)','success');
+    }
+    lastKnownOrderCount = totalOrders;
+    localStorage.setItem('lao_last_order_count', totalOrders);
+  }).catch(()=>{});
+}
+function updateOrdersBadge(count){
+  const badge = document.getElementById('ordersNotifyBadge');
+  if(!badge) return;
+  if(count>0){ badge.textContent = count; badge.classList.remove('hide'); }
+  else badge.classList.add('hide');
+}
+function playNotifySound(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.setValueAtTime(660, ctx.currentTime+0.15);
+    g.gain.setValueAtTime(0.25, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.5);
+    o.start(); o.stop(ctx.currentTime+0.5);
+  }catch(e){}
+}
+
 /* ---- ຕົວຢ່າງໃບບິນ (popup) ---- */
 function openPrintPreview(orderId){
   const o = ORDERS_CACHE.find(x=>x.OrderID===orderId);
@@ -3078,7 +3130,8 @@ function renderAdminSettings(){
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
       ['contactPhone','ເບີໂທຕິດຕໍ່'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ Facebook'],
-      ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່']
+      ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່'],
+      ['slackWebhookUrl','🔔 Slack Webhook URL (ແຈ້ງເຕືອນອໍເດີໃໝ່ຜ່ານ Slack)']   // 👈 ເພີ່ມແຖວນີ້
     ];
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -3092,7 +3145,7 @@ function renderAdminSettings(){
   });
 }
 function saveAllSettings(){
-  const fields = ['storeName','logoUrl','bannerText','primaryColor','secondaryColor','bgColor','currency','freeShippingMin','defaultShippingFee','bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','contactEmail','facebookUrl','addressText','footerText','adminNotifyEmail'];
+  const fields = ['storeName','logoUrl','bannerText','primaryColor','secondaryColor','bgColor','currency','freeShippingMin','defaultShippingFee','bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','contactEmail','facebookUrl','addressText','footerText','adminNotifyEmail','slackWebhookUrl'];
   const obj = {};
   fields.forEach(f=>{ const el = document.getElementById('set_'+f); if(el) obj[f]=el.value; });
   adminCall('adminUpdateSettings', obj).then(()=>{
