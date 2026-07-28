@@ -2027,6 +2027,7 @@ try {
 function scheduleAdminCacheSave(tab){
   let attempts = 0;
   const trySave = ()=>{
+    if(STATE.adminTab !== tab) return; // 👈 ເພີ່ມແຖວນີ້: ຢຸດທັນທີຖ້າຜູ້ໃຊ້ປ່ຽນໜ້າໄປແລ້ວ ບໍ່ໃຫ້ Cache ປົນກັນ
     attempts++;
     const el = document.getElementById('adminContent');
     if(!el) return;
@@ -2064,6 +2065,7 @@ function openAdminTab(tab){
   try {
     Promise.resolve((renderers[tab]||function(){})())
       .catch(err=>{
+        if(STATE.adminTab !== tab) return; // 👈 ເພີ່ມແຖວນີ້
         content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger);">
           ⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ: ${err && err.message ? err.message : 'Unknown error'}
           <br><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button>
@@ -2152,8 +2154,10 @@ function renderAdminDashboard(){
     </div>
     <div id="dashKpiWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>`;
   renderDashFilterBar();
-  return loadDashRaw().then(raw=>{ renderDashBody(raw, range); });
-}
+  return loadDashRaw().then(raw=>{
+  if(STATE.adminTab!=='dashboard' && STATE.adminTab!=='analytics') return; // 👈
+  renderDashBody(raw, range);
+});
 function renderDashBody(raw, range){
   const a = computeDashFromRaw(raw, range.from, range.to);
   document.getElementById('dashKpiWrap').innerHTML = `
@@ -2270,6 +2274,7 @@ const ORDER_FILTERS = [
 
 function renderAdminOrders(){
   adminCall('adminGetOrders').then(orders=>{
+    if(STATE.adminTab!=='orders') return; // 👈
     ORDERS_CACHE = orders;
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -2699,6 +2704,7 @@ function submitCrudForm(){
 /* ---------- PRODUCTS ---------- */
 function renderAdminProducts(){
   adminCall('adminGetProducts').then(products=>{
+    if(STATE.adminTab!=='products') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -2773,6 +2779,7 @@ function toggleFeatured(id, val){
 /* ---------- FLASH SALE (ຈັດການແຄມເປນ) ---------- */
 function renderAdminFlashSale(){
   adminCall('adminGetProducts').then(products=>{
+    if(STATE.adminTab!=='flashsale') return; // 👈
     const list = products.filter(p=>p.FlashSale==='Yes');
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -2834,6 +2841,7 @@ const FEATURED_MODES = [
 
 function renderAdminFeatured(){
   return Promise.all([adminCall('adminGetSettings'), adminCall('adminGetProducts')]).then(([settings, products])=>{
+    if(STATE.adminTab!=='featured') return; // 👈
     FEATURED_PRODUCTS_CACHE = products;
     FEATURED_STATE.mode = settings.featuredMode || 'auto';
     FEATURED_STATE.title = settings.featuredTitle || 'ສິນຄ້າແນະນຳ';
@@ -2923,6 +2931,7 @@ function saveFeaturedSettings(){
 /* ---------- CATEGORIES ---------- */
 function renderAdminCategories(){
   adminCall('adminGetCategories').then(cats=>{
+    if(STATE.adminTab!=='categories') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -2961,6 +2970,7 @@ function deleteCategory(id){
 /* ---------- BANNERS ---------- */
 function renderAdminBanners(){
   adminCall('adminGetBanners').then(banners=>{
+    if(STATE.adminTab!=='banners') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -3000,6 +3010,7 @@ function deleteBanner(id){
 /* ---------- COUPONS / PROMOTION ---------- */
 function renderAdminCoupons(){
   adminCall('adminGetCoupons').then(coupons=>{
+    if(STATE.adminTab!=='promotion') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -3040,6 +3051,7 @@ function deleteCoupon(code){
 /* ---------- CUSTOMERS ---------- */
 function renderAdminCustomers(){
   adminCall('adminGetCustomers').then(customers=>{
+    if(STATE.adminTab!=='customers') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <h4>ລູກຄ້າທັງໝົດ (${customers.length})</h4>
@@ -3060,6 +3072,7 @@ function toggleBlacklist(phone, val){
 /* ---------- SHIPPING ---------- */
 function renderAdminShipping(){
   adminCall('adminGetShipping').then(ships=>{
+    if(STATE.adminTab!=='shipping') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -3094,6 +3107,7 @@ function openShippingForm(existing){
 /* ---------- EXPENSES ---------- */
 function renderAdminExpenses(){
   adminCall('adminGetExpenses').then(expenses=>{
+    if(STATE.adminTab!=='expenses') return; // 👈
     const total = expenses.reduce((s,e)=>s+Number(e.Amount||0),0);
     document.getElementById('adminContent').innerHTML = `
       <div class="kpi-grid"><div class="kpi-card"><div class="lbl">ລາຍຈ່າຍລວມ</div><div class="val">${fmt(total)} ₭</div></div></div>
@@ -3126,6 +3140,7 @@ function renderAdminAnalytics(){ renderAdminDashboard(); }
 /* ---------- USERS / ADMINS ---------- */
 function renderAdminUsers(){
   adminCall('adminGetUsers').then(users=>{
+    if(STATE.adminTab!=='users') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -3163,6 +3178,7 @@ function deleteUser(username){
 /* ---------- SETTINGS ---------- */
 function renderAdminSettings(){
   adminCall('adminGetSettings').then(s=>{
+    if(STATE.adminTab!=='settings') return; // 👈
     const basicFields = [
       ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
       ['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນດ້ວຍ | )'],
