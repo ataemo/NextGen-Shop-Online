@@ -577,6 +577,13 @@ a{color:inherit;text-decoration:none;}
 .admin-nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:2px;}
 .admin-nav-item.active{background:var(--primary);color:#fff;}
 .admin-nav-item .ic{width:18px;text-align:center;}
+
+/* 👇 ເພີ່ມ block ໃໝ່ນີ້ຕໍ່ທ້າຍ ເພື່ອຂະຫຍາຍໄອຄອນ+ຕົວໜັງສືສະເພາະ PC/Tablet */
+@media(min-width:821px){
+  .admin-side{width:270px;}
+  .admin-nav-item{font-size:15px;padding:13px 14px;gap:12px;}
+  .admin-nav-item .ic{width:24px;font-size:20px;}
+}
 .admin-main{flex:1;padding:22px 24px;overflow-x:hidden;min-width:0;}
 .admin-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
 .admin-topbar h2{margin:0;font-size:20px;font-family:var(--font-display);}
