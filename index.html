@@ -2011,8 +2011,9 @@ function adminCall(fn, ...args){
   });
 }
 
-/* ---------- DASHBOARD (ມີຕົວກອງຊ່ວງເວລາ) ---------- */
+/* ---------- DASHBOARD (ໄວ — Cache ຂໍ້ມູນຄັ້ງດຽວ, ຄິດໄລ່ຢູ່ Client) ---------- */
 let DASH_STATE = { preset:'today', from:null, to:null };
+let DASH_RAW = null;
 const DASH_PRESETS = [
   {key:'today', label:'ມື້ນີ້'},
   {key:'7days', label:'7 ວັນ'},
@@ -2033,15 +2034,59 @@ function computeDashRange(preset){
   else { from = DASH_STATE.from ? new Date(DASH_STATE.from) : new Date(y,m,d); to = DASH_STATE.to ? new Date(DASH_STATE.to) : new Date(y,m,d); }
   return { from: toDateStr_(from), to: toDateStr_(to) };
 }
+function loadDashRaw(force){
+  if(DASH_RAW && !force) return Promise.resolve(DASH_RAW);
+  return adminCall('adminGetDashboardRaw').then(d=>{ DASH_RAW = d; return d; });
+}
+function computeDashFromRaw(raw, fromStr, toStr){
+  const from = new Date(fromStr+'T00:00:00');
+  const to = new Date(toStr+'T23:59:59');
+  let sales=0, expense=0, ordersCount=0, pending=0;
+  raw.orders.forEach(o=>{
+    const d = new Date(o.Date);
+    if(d>=from && d<=to){
+      ordersCount++;
+      if(o.Status==='Pending') pending++;
+      if(o.Status!=='Cancelled') sales += o.Total;
+    }
+  });
+  raw.expenses.forEach(e=>{
+    const d = new Date(e.Date);
+    if(d>=from && d<=to) expense += e.Amount;
+  });
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dailySales = [];
+  for(let i=29;i>=0;i--){
+    const d = new Date(startOfDay); d.setDate(d.getDate()-i);
+    const next = new Date(d); next.setDate(d.getDate()+1);
+    const s = raw.orders.filter(o=>{ const od=new Date(o.Date); return od>=d && od<next && o.Status!=='Cancelled'; })
+      .reduce((s,o)=>s+o.Total,0);
+    dailySales.push({ date: pad2_(d.getDate())+'/'+pad2_(d.getMonth()+1), sales:s });
+  }
+  return {
+    range:{ sales, expense, profit:sales-expense, orders:ordersCount, pending },
+    total:{ products: raw.totalProducts, lowStock: raw.lowStockCount },
+    statusCounts: raw.statusCounts,
+    topProducts: raw.topProducts, topCustomers: raw.topCustomers,
+    dailySales
+  };
+}
 function renderAdminDashboard(){
   const range = computeDashRange(DASH_STATE.preset);
   DASH_STATE.from = range.from; DASH_STATE.to = range.to;
-  return adminCall('adminGetAnalytics', range.from, range.to).then(a=>{
-    document.getElementById('adminContent').innerHTML = `
-      <div class="panel">
-        <div class="dash-filter-bar" id="dashFilterBar"></div>
-        <div class="dash-range-label">📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b></div>
-      </div>
+  document.getElementById('adminContent').innerHTML = `
+    <div class="panel">
+      <div class="dash-filter-bar" id="dashFilterBar"></div>
+      <div class="dash-range-label">📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b></div>
+    </div>
+    <div id="dashKpiWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>`;
+  renderDashFilterBar();
+  return loadDashRaw().then(raw=>{ renderDashBody(raw, range); });
+}
+function renderDashBody(raw, range){
+  const a = computeDashFromRaw(raw, range.from, range.to);
+  document.getElementById('dashKpiWrap').innerHTML = `
       <div class="kpi-grid">
         <div class="kpi-card" style="--kpi-color:#3B82F6;--kpi-bg:#DBEAFE;"><div class="icon-badge">📈</div><div class="lbl">ລາຍຮັບລວມ</div><div class="val">${fmt(a.range.sales)} ₭</div></div>
         <div class="kpi-card" style="--kpi-color:#10B981;--kpi-bg:#D1FAE5;"><div class="icon-badge">💲</div><div class="lbl">ກຳໄລ</div><div class="val">${fmt(a.range.profit)} ₭</div></div>
@@ -2066,10 +2111,8 @@ function renderAdminDashboard(){
       <div class="panel"><h4>ລູກຄ້າ VIP Top 5</h4>
         ${a.topCustomers.map(c=>`<div class="cart-summary-row"><span>${c.Name} (${c.Phone})</span><b>${fmt(c.TotalSpent)} ₭</b></div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
       </div>
-    `;
-    renderDashFilterBar();
-    drawLineChart('dailyChart', a.dailySales);
-  });
+  `;
+  drawLineChart('dailyChart', a.dailySales);
 }
 function renderDashFilterBar(){
   const el = document.getElementById('dashFilterBar');
@@ -2083,37 +2126,61 @@ function renderDashFilterBar(){
 }
 function selectDashPreset(key){
   DASH_STATE.preset = key;
-  if(key!=='custom'){ renderAdminDashboard(); } else { renderDashFilterBar(); }
+  const range = computeDashRange(key);
+  DASH_STATE.from = range.from; DASH_STATE.to = range.to;
+  const lbl = document.querySelector('.dash-range-label');
+  if(lbl) lbl.innerHTML = `📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b>`;
+  renderDashFilterBar();
+  loadDashRaw().then(raw=> renderDashBody(raw, range)); // ← ໃຊ້ Cache, ບໍ່ຮ້ອງ Server, ໄວທັນທີ
 }
 function applyDashCustomRange(){
   DASH_STATE.preset='custom';
   DASH_STATE.from = document.getElementById('dashFromInput').value;
   DASH_STATE.to = document.getElementById('dashToInput').value;
-  renderAdminDashboard();
+  const range = { from: DASH_STATE.from, to: DASH_STATE.to };
+  const lbl = document.querySelector('.dash-range-label');
+  if(lbl) lbl.innerHTML = `📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b>`;
+  loadDashRaw().then(raw=> renderDashBody(raw, range));
 }
 function resetDashFilter(){ DASH_STATE = {preset:'today', from:null, to:null}; renderAdminDashboard(); }
 
+/* ---------- ກຣາຟຍອດຂາຍ ມີແກນ Y (ຕົວເລກ) ດ້ານຊ້າຍ ແລະ ແກນ X (ວັນທີ) ດ້ານລຸ່ມ ---------- */
 function drawLineChart(containerId, data){
-  const w=600,h=180,pad=30;
-  const max = Math.max(1, ...data.map(d=>d.sales));
-  const stepX = (w-pad*2)/(data.length-1||1);
-  const points = data.map((d,i)=>{
-    const x = pad+i*stepX;
-    const y = h-pad-((d.sales/max)*(h-pad*2));
-    return `${x},${y}`;
-  }).join(' ');
-  const areaPoints = `${pad},${h-pad} ` + points + ` ${w-pad},${h-pad}`;
-  const svg = `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-    <polygon points="${areaPoints}" fill="var(--primary-light)" opacity="0.6"></polygon>
+  const w=900, h=260, padL=55, padR=20, padT=16, padB=30;
+  const rawMax = Math.max(1, ...data.map(d=>d.sales));
+  const niceMax = Math.ceil(rawMax/5)*5 || 5;
+  const stepX = (w-padL-padR)/((data.length-1)||1);
+  const yFor = v => h-padB-(v/niceMax)*(h-padT-padB);
+  const points = data.map((d,i)=> (padL+i*stepX)+','+yFor(d.sales)).join(' ');
+  const areaPoints = `${padL},${h-padB} ` + points + ` ${w-padR},${h-padB}`;
+
+  let gridHTML = '';
+  for(let g=0; g<=4; g++){
+    const val = Math.round(niceMax * g/4);
+    const y = yFor(val);
+    gridHTML += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="var(--border)" stroke-width="1"></line>`;
+    gridHTML += `<text x="${padL-8}" y="${y+4}" font-size="10" fill="var(--text-muted)" text-anchor="end">${fmt(val)}</text>`;
+  }
+
+  const labelEvery = Math.max(1, Math.ceil(data.length/8));
+  let xLabelsHTML = '';
+  data.forEach((d,i)=>{
+    if(i % labelEvery === 0 || i===data.length-1){
+      const x = padL+i*stepX;
+      xLabelsHTML += `<text x="${x}" y="${h-8}" font-size="10" fill="var(--text-muted)" text-anchor="middle">${d.date}</text>`;
+    }
+  });
+
+  const svg = `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:230px;">
+    ${gridHTML}
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h-padB}" stroke="var(--border)" stroke-width="1"></line>
+    <polygon points="${areaPoints}" fill="var(--primary-light)" opacity="0.55"></polygon>
     <polyline points="${points}" fill="none" stroke="var(--primary)" stroke-width="2.5"></polyline>
-    ${data.map((d,i)=>{
-      const x = pad+i*stepX; const y = h-pad-((d.sales/max)*(h-pad*2));
+    ${data.map((d,i)=>{ const x=padL+i*stepX; const y=yFor(d.sales);
       return `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)"><title>${d.date}: ${fmt(d.sales)}</title></circle>`;
     }).join('')}
-  </svg>
-  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;">
-    <span>${data[0]?.date||''}</span><span>${data[data.length-1]?.date||''}</span>
-  </div>`;
+    ${xLabelsHTML}
+  </svg>`;
   document.getElementById(containerId).innerHTML = svg;
 }
 
