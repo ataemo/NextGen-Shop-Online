@@ -202,6 +202,10 @@ a{color:inherit;text-decoration:none;}
   object-fit:contain;
   flex-shrink:0;
 }
+.flashpage-title-icon{
+  height:55px;
+  object-fit:contain;
+}
 @media(max-width:899px){
   .flash-title-icon{
     height:35px;
@@ -704,7 +708,7 @@ table tr:hover td{background:var(--primary-light);}
      ============================================================ -->
 <div id="flashPage" class="app hide">
   <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
-    <div class="brand" style="font-size:16px;color:#fff;">⚡Flash Sale</div>
+    <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon"></div>
     <div class="spacer"></div>
     <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
   </div>
