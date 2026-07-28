@@ -711,9 +711,16 @@ table tr:hover td{background:var(--primary-light);}
      ============================================================ -->
 <div id="flashPage" class="app hide">
   <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
+    <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="closeFlashPage()">🏠</button>
     <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon"></div>
     <div class="spacer"></div>
-    <button class="icon-btn" style="background:rgba(255,255,255,.25);color:#fff;" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
+    <div class="desktop-nav">
+      <button class="dn-item" onclick="closeFlashPage()">🏠 ໜ້າຫຼັກ</button>
+      <button class="dn-item" onclick="goToCategoryFromFlash()">🗂️ ສິນຄ້າທັງໝົດ</button>
+      <button class="dn-item" onclick="openMyOrders()">📦 ຕິດຕາມອໍເດີ</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" style="background:#fff;color:#FF3D3D;box-shadow:0 4px 12px rgba(0,0,0,.25);" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
   </div>
   <div style="padding:14px 16px;">
     <div class="flash-countdown" style="display:inline-block;background:linear-gradient(135deg,#FF3D3D,#FF7A00);color:#fff;" id="flashPageCountdown">⏱ 00:00:00</div>
