@@ -641,9 +641,60 @@ table tr:hover td{background:var(--primary-light);}
 .tag-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .svg-chart{width:100%;height:auto;display:block;}
 @keyframes skeletonPulse{0%,100%{opacity:.5;}50%{opacity:.9;}}
+.skeleton-cat{width:76px;height:76px;border-radius:22px;}
+.skeleton-card{aspect-ratio:4/5;}
 .skeleton{background:var(--primary-light);border-radius:var(--radius-md);animation:skeletonPulse 1.4s ease-in-out infinite;}
 .skeleton-cat{width:76px;height:76px;border-radius:22px;}
 .skeleton-card{aspect-ratio:4/5;}
+
+/* ---------- SUCCESS RECEIPT MODAL ---------- */
+.success-header{
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;text-align:center;padding:28px 20px 22px;
+}
+.success-header .ic{font-size:46px;margin-bottom:6px;}
+.success-header h3{margin:0 0 2px;font-family:var(--font-display);font-size:19px;font-weight:800;}
+.success-header .store{font-size:15px;font-weight:700;margin-top:4px;}
+.success-header .tagline{font-size:11px;opacity:.85;margin-top:4px;}
+.success-header .datetime{font-size:11px;opacity:.85;margin-top:6px;}
+.success-body{padding:20px;}
+.success-code-box{
+  background:var(--primary-light);border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;
+}
+.success-code-box .lbl{font-size:11px;color:var(--text-muted);font-weight:700;}
+.success-code-box .code{font-size:19px;font-weight:800;color:var(--primary-dark);letter-spacing:.5px;}
+.success-code-box button{
+  width:34px;height:34px;border-radius:10px;background:#fff;color:var(--primary);
+  display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:var(--shadow-soft);
+}
+.success-section-title{font-size:13px;font-weight:800;color:var(--text);margin:14px 0 10px;display:flex;align-items:center;gap:6px;}
+.success-item-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--border);}
+.success-item-row:last-child{border-bottom:none;}
+.success-total-box{
+  background:var(--primary-light);border-radius:14px;padding:14px 16px;margin:14px 0 18px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.success-total-box .lbl{font-size:13px;font-weight:700;color:var(--primary-dark);}
+.success-total-box .val{font-size:20px;font-weight:800;color:var(--primary-dark);}
+.success-info-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;}
+.success-info-row .lbl{color:var(--text-muted);flex-shrink:0;}
+.success-info-row .val{text-align:right;font-weight:600;}
+.success-warn-box{
+  background:#FFF8E1;border:1px solid #FFE29A;border-radius:14px;padding:12px 14px;
+  font-size:12px;line-height:1.6;color:#8A6100;margin:16px 0;
+}
+.success-danger-box{
+  background:#FDECEC;border:1px solid #F7C6C6;border-radius:14px;padding:12px 14px;
+  font-size:12px;line-height:1.6;color:#A8231F;margin-bottom:16px;
+}
+.success-whatsapp-btn{
+  margin-top:10px;background:#25D366;color:#fff;border-radius:12px;padding:10px;
+  display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13px;
+}
+.success-actions{display:flex;gap:10px;margin-top:6px;}
+.success-actions .btn{flex:1;}
+
 </style>
 </head>
 <body>
@@ -881,13 +932,8 @@ table tr:hover td{background:var(--primary-light);}
 
 <!-- Order Success Modal -->
 <div class="modal-center-wrap hide" id="successModal">
-  <div class="modal-center" style="text-align:center;">
-    <div style="font-size:52px;">🎉</div>
-    <h3 style="font-family:var(--font-display);">ສັ່ງຊື້ສຳເລັດ!</h3>
-    <p style="color:var(--text-muted);font-size:13px;">ເລກທີອໍເດີຂອງທ່ານ</p>
-    <div style="font-size:20px;font-weight:800;color:var(--primary);margin-bottom:14px;" id="successOrderId"></div>
-    <p style="font-size:13px;color:var(--text-muted);">ຮ້ານຄ້າຈະຕິດຕໍ່ຢືນຢັນອໍເດີຂອງທ່ານໂດຍໄວ</p>
-    <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="closeSuccessModal()">ກັບໄປໜ້າຫຼັກ</button>
+  <div class="modal-center" id="successModalCard" style="max-width:420px;padding:0;overflow:hidden auto;">
+    <div id="successModalBody"></div>
   </div>
 </div>
 
@@ -1709,6 +1755,7 @@ function renderPaymentInfo(){
   } else box.classList.add('hide');
 }
 let slipDataUrl = '';
+let lastOrderDetail = null;
 function previewSlip(e){
   const file = e.target.files[0]; if(!file) return;
   const reader = new FileReader();
@@ -1764,10 +1811,20 @@ function placeOrder(){
     items: STATE.cart.map(i=>({productId:i.productId, name:i.name, color:i.color, size:i.size, qty:i.qty, price:i.price}))
   };
   gsRun('submitOrder', order).then(res=>{
+    lastOrderDetail = {
+      orderId: res.orderId,
+      date: new Date(),
+      items: STATE.cart.map(i=>({name:i.name, color:i.color, size:i.size, qty:i.qty, price:i.price})),
+      customerName: name, phone, address,
+      province: order.province, district: order.district, village: order.village,
+      shippingCompany: order.shippingCompany, paymentMethod: order.paymentMethod,
+      note: document.getElementById('ckNote').value,
+      subtotal: res.subtotal, discount: res.discount, shippingFee: res.shippingFee, total: res.total
+    };
     STATE.cart = []; STATE.couponApplied = null; slipDataUrl='';
     saveCart();
     closeSheet('cartSheet');
-    document.getElementById('successOrderId').textContent = res.orderId;
+    renderSuccessModal(lastOrderDetail);
     document.getElementById('successModal').classList.remove('hide');
     btn.disabled=false; btn.textContent='ຢືນຢັນສັ່ງຊື້';
     if(res.slipUploadWarning){ toast(res.slipUploadWarning, 'error'); }
@@ -1812,6 +1869,109 @@ function onProvinceChange(){
     : '<option value="">— ກະລຸນາເລືອກແຂວງກ່ອນ —</option>';
 }
 function closeSuccessModal(){ document.getElementById('successModal').classList.add('hide'); switchTab('home'); }
+
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast('ຄັດລອກເລກອໍເດີແລ້ວ')).catch(()=>toast('ຄັດລອກບໍ່ສຳເລັດ','error'));
+  } else {
+    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('ຄັດລອກເລກອໍເດີແລ້ວ'); }catch(e){ toast('ຄັດລອກບໍ່ສຳເລັດ','error'); }
+    ta.remove();
+  }
+}
+function toWhatsappLink(phone){
+  let p = String(phone||'').replace(/[^0-9]/g,'');
+  if(!p) return '#';
+  if(p.startsWith('0')) p = '856'+p.slice(1);
+  else if(!p.startsWith('856')) p = '856'+p;
+  return 'https://wa.me/'+p;
+}
+function renderSuccessModal(o){
+  const s = DATA.settings || {};
+  const dateStr = new Date(o.date).toLocaleString('lo-LA', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const itemsHTML = o.items.map(i=>`
+    <div class="success-item-row">
+      <span>${i.name}${[i.color,i.size].filter(Boolean).length ? ' ('+[i.color,i.size].filter(Boolean).join('/')+')' : ''} ×${i.qty}</span>
+      <b>${fmt(i.price*i.qty)} ₭</b>
+    </div>`).join('');
+  const addressFull = [o.address, o.village, o.district, o.province].filter(Boolean).join(', ');
+  const waLink = toWhatsappLink(s.whatsappNumber || s.contactPhone);
+
+  document.getElementById('successModalBody').innerHTML = `
+    <div class="success-header">
+      <div class="ic">🎉</div>
+      <h3>ສັ່ງຊື້ສຳເລັດແລ້ວ!</h3>
+      <div class="store">${s.storeName||'LAO SHOP'}</div>
+      <div class="tagline">${s.bannerText||'ຂອບໃຈທີ່ໃຊ້ບໍລິການ'}</div>
+      <div class="datetime">📅 ${dateStr}</div>
+    </div>
+    <div class="success-body">
+      <div class="success-code-box">
+        <div><div class="lbl">ລະຫັດອໍເດີ</div><div class="code">${o.orderId}</div></div>
+        <button onclick="copyText('${o.orderId}')" title="ຄັດລອກ">📋</button>
+      </div>
+
+      <div class="success-section-title">🛍️ ລາຍການສິນຄ້າ</div>
+      ${itemsHTML}
+
+      <div class="success-total-box">
+        <span class="lbl">💰 ລວມທັງໝົດ</span>
+        <span class="val">${fmt(o.total)} ₭</span>
+      </div>
+
+      <div class="success-section-title">📋 ຂໍ້ມູນສັ່ງຊື້</div>
+      <div class="success-info-row"><span class="lbl">👤 ຊື່</span><span class="val">${o.customerName}</span></div>
+      <div class="success-info-row"><span class="lbl">📱 ເບີໂທ</span><span class="val">${o.phone}</span></div>
+      <div class="success-info-row"><span class="lbl">📍 ທີ່ຢູ່</span><span class="val">${addressFull||'-'}</span></div>
+      <div class="success-info-row"><span class="lbl">🚚 ຂົນສົ່ງ</span><span class="val">${o.shippingCompany||'-'}</span></div>
+      <div class="success-info-row"><span class="lbl">💳 ຊຳລະ</span><span class="val">${o.paymentMethod==='Transfer'?'ໂອນຜ່ານທະນາຄານ/QR':'ເກັບເງິນປາຍທາງ (COD)'}</span></div>
+      ${o.note?`<div class="success-info-row"><span class="lbl">📝 ໝາຍເຫດ</span><span class="val">${o.note}</span></div>`:''}
+
+      <div class="success-warn-box">
+        📸 <b>ກະລຸນາບັນທຶກໜ້າຈໍນີ້ໄວ້!</b><br>
+        ຖ່າຍຮູບໜ້າຈໍ ຫຼື ດາວໂຫຼດໃບບິນເກັບໄວ້ ເພື່ອໃຊ້ຢືນຢັນການສັ່ງຊື້ ຖ້າມີບັນຫາ.
+      </div>
+
+      <div class="success-danger-box">
+        ⚠️ <b>ຖ້າ 1-2 ວັນ ຍັງບໍ່ໄດ້ຮັບການຕິດຕໍ່</b><br>
+        ໃຫ້ຕິດຕໍ່ຫາຮ້ານໂດຍກົງ ເພື່ອຢືນຢັນອໍເດີ ບໍ່ໃຫ້ຫຼົ້ນນັດ!
+        <a href="${waLink}" target="_blank" class="success-whatsapp-btn">💬 ທັກ WhatsApp ຫາຮ້ານ</a>
+      </div>
+
+      <div class="success-actions">
+        <button class="btn btn-outline" onclick="printOrderReceipt()">⬇️ ດາວໂຫຼດໃບບິນ</button>
+        <button class="btn btn-primary" onclick="closeSuccessModal()">🛒 ສັ່ງຊື້ໃໝ່</button>
+      </div>
+    </div>`;
+}
+function printOrderReceipt(){
+  const o = lastOrderDetail;
+  if(!o) return;
+  const s = DATA.settings || {};
+  const itemsRows = o.items.map(i=>`<tr><td>${i.name} ${[i.color,i.size].filter(Boolean).join('/')}</td><td>${i.qty}</td><td>${fmt(i.price)}</td><td>${fmt(i.price*i.qty)}</td></tr>`).join('');
+  const win = window.open('','_blank');
+  win.document.write(`
+    <html><head><title>ໃບບິນ ${o.orderId}</title>
+    <style>
+      body{font-family:'Noto Sans Lao',sans-serif;padding:24px;color:#111;}
+      table{width:100%;border-collapse:collapse;margin-top:14px;}
+      th,td{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left;}
+      .center{text-align:center;} .right{text-align:right;}
+      h2{margin-bottom:0;} .muted{color:#555;font-size:12px;}
+    </style></head><body>
+    <div class="center"><h2>${s.storeName||'LAO SHOP'}</h2><div class="muted">${s.addressText||''} · ${s.contactPhone||''}</div></div>
+    <hr>
+    <p><b>ເລກອໍເດີ:</b> ${o.orderId} &nbsp; <b>ວັນທີ:</b> ${new Date(o.date).toLocaleString('lo-LA')}</p>
+    <p><b>ລູກຄ້າ:</b> ${o.customerName} &nbsp; <b>ເບີໂທ:</b> ${o.phone}</p>
+    <p><b>ທີ່ຢູ່:</b> ${[o.address,o.village,o.district,o.province].filter(Boolean).join(', ')}</p>
+    <table><thead><tr><th>ສິນຄ້າ</th><th>ຈຳນວນ</th><th>ລາຄາ</th><th>ລວມ</th></tr></thead>
+    <tbody>${itemsRows}</tbody></table>
+    <p class="right">ລວມຍ່ອຍ: ${fmt(o.subtotal)} ₭<br>ຄ່າຂົນສົ່ງ: ${fmt(o.shippingFee)} ₭<br>ສ່ວນຫຼຸດ: ${fmt(o.discount)} ₭<br><b>ລວມທັງໝົດ: ${fmt(o.total)} ₭</b></p>
+    <hr><p class="muted">ຂອບໃຈທີ່ໃຊ້ບໍລິການ 🙏</p>
+    <script>window.print()<\/script>
+    </body></html>`);
+  win.document.close();
+}
 
 /* ============================================================
    TRACK MY ORDERS (public, by phone)
@@ -3190,7 +3350,7 @@ function renderAdminSettings(){
       ['heroSlideSpeed','⏱️ ຄວາມໄວສະໄລ້ Banner (ວິນາທີ ເຊັ່ນ 4)'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
-      ['contactPhone','ເບີໂທຕິດຕໍ່'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ Facebook'],
+      ['contactPhone','ເບີໂທຕິດຕໍ່'], ['whatsappNumber','ເບີ WhatsApp (ຖ້າຕ່າງຈາກເບີໂທ)'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ Facebook'],
       ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່'],
       ['slackWebhookUrl','🔔 Slack Webhook URL']
     ];
