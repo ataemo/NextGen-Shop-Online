@@ -591,6 +591,14 @@ a{color:inherit;text-decoration:none;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-soft);}
 .kpi-card .lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
 .kpi-card .val{font-size:22px;font-weight:800;font-family:var(--font-display);color:var(--primary);margin-top:4px;}
+.kpi-card{position:relative;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:var(--radius-md) var(--radius-md) 0 0;background:var(--kpi-color,var(--primary));}
+.kpi-card .icon-badge{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--kpi-bg,var(--primary-light));margin-bottom:10px;}
+.dash-filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.dash-filter-btn{padding:9px 16px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;}
+.dash-filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.dash-date-input{padding:9px 10px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;}
+.dash-range-label{font-size:12px;color:var(--text-muted);margin:12px 0 0;}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;margin-bottom:18px;box-shadow:var(--shadow-soft);}
 .panel h4{margin:0 0 14px;font-size:14px;font-family:var(--font-display);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -2003,19 +2011,48 @@ function adminCall(fn, ...args){
   });
 }
 
-/* ---------- DASHBOARD ---------- */
+/* ---------- DASHBOARD (ມີຕົວກອງຊ່ວງເວລາ) ---------- */
+let DASH_STATE = { preset:'today', from:null, to:null };
+const DASH_PRESETS = [
+  {key:'today', label:'ມື້ນີ້'},
+  {key:'7days', label:'7 ວັນ'},
+  {key:'month', label:'ເດືອນນີ້'},
+  {key:'year', label:'ປີນີ້'},
+  {key:'custom', label:'ກຳນົດເອງ'}
+];
+function pad2_(n){ return String(n).padStart(2,'0'); }
+function toDateStr_(d){ return d.getFullYear()+'-'+pad2_(d.getMonth()+1)+'-'+pad2_(d.getDate()); }
+function computeDashRange(preset){
+  const now = new Date();
+  const y=now.getFullYear(), m=now.getMonth(), d=now.getDate();
+  let from, to;
+  if(preset==='today'){ from=new Date(y,m,d); to=new Date(y,m,d); }
+  else if(preset==='7days'){ to=new Date(y,m,d); from=new Date(y,m,d-6); }
+  else if(preset==='month'){ from=new Date(y,m,1); to=new Date(y,m,d); }
+  else if(preset==='year'){ from=new Date(y,0,1); to=new Date(y,m,d); }
+  else { from = DASH_STATE.from ? new Date(DASH_STATE.from) : new Date(y,m,d); to = DASH_STATE.to ? new Date(DASH_STATE.to) : new Date(y,m,d); }
+  return { from: toDateStr_(from), to: toDateStr_(to) };
+}
 function renderAdminDashboard(){
-  adminCall('adminGetAnalytics').then(a=>{
+  const range = computeDashRange(DASH_STATE.preset);
+  DASH_STATE.from = range.from; DASH_STATE.to = range.to;
+  return adminCall('adminGetAnalytics', range.from, range.to).then(a=>{
     document.getElementById('adminContent').innerHTML = `
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="lbl">ຍອດຂາຍມື້ນີ້</div><div class="val">${fmt(a.today.sales)} ₭</div></div>
-        <div class="kpi-card"><div class="lbl">ອໍເດີມື້ນີ້</div><div class="val">${a.today.orders}</div></div>
-        <div class="kpi-card"><div class="lbl">ຍອດຂາຍເດືອນນີ້</div><div class="val">${fmt(a.month.sales)} ₭</div></div>
-        <div class="kpi-card"><div class="lbl">ກຳໄລລວມ</div><div class="val">${fmt(a.total.profit)} ₭</div></div>
+      <div class="panel">
+        <div class="dash-filter-bar" id="dashFilterBar"></div>
+        <div class="dash-range-label">📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b></div>
       </div>
-      <div class="panel"><h4>ຍອດຂາຍ 14 ວັນຫຼ້າສຸດ</h4><div id="dailyChart"></div></div>
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:#3B82F6;--kpi-bg:#DBEAFE;"><div class="icon-badge">📈</div><div class="lbl">ລາຍຮັບລວມ</div><div class="val">${fmt(a.range.sales)} ₭</div></div>
+        <div class="kpi-card" style="--kpi-color:#10B981;--kpi-bg:#D1FAE5;"><div class="icon-badge">💲</div><div class="lbl">ກຳໄລ</div><div class="val">${fmt(a.range.profit)} ₭</div></div>
+        <div class="kpi-card" style="--kpi-color:#F59E0B;--kpi-bg:#FEF3C7;"><div class="icon-badge">🛍️</div><div class="lbl">ອໍເດີ</div><div class="val">${a.range.orders}</div></div>
+        <div class="kpi-card" style="--kpi-color:#EF4444;--kpi-bg:#FEE2E2;"><div class="icon-badge">⏰</div><div class="lbl">ຄ້າງຊຳລະ</div><div class="val">${a.range.pending}</div></div>
+        <div class="kpi-card" style="--kpi-color:#8B5CF6;--kpi-bg:#EDE9FE;"><div class="icon-badge">📦</div><div class="lbl">ສິນຄ້າ</div><div class="val">${a.total.products}</div></div>
+        <div class="kpi-card" style="--kpi-color:#14B8A6;--kpi-bg:#CCFBF1;"><div class="icon-badge">⚠️</div><div class="lbl">ໃກ້ໝົດສະຕັອກ</div><div class="val">${a.total.lowStock}</div></div>
+      </div>
+      <div class="panel"><h4>ຍອດຂາຍ 30 ວັນຫຼ້າສຸດ</h4><div id="dailyChart"></div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="panel"><h4>ສະຖານະອໍເດີ</h4>
+        <div class="panel"><h4>ສະຖານະອໍເດີ (ລວມທັງໝົດ)</h4>
           <div class="cart-summary-row"><span>⏳ ລໍຖ້າ</span><b>${a.statusCounts.pending}</b></div>
           <div class="cart-summary-row"><span>💰 ຊຳລະແລ້ວ</span><b>${a.statusCounts.paid}</b></div>
           <div class="cart-summary-row"><span>🚚 ກຳລັງສົ່ງ</span><b>${a.statusCounts.shipping}</b></div>
@@ -2030,9 +2067,32 @@ function renderAdminDashboard(){
         ${a.topCustomers.map(c=>`<div class="cart-summary-row"><span>${c.Name} (${c.Phone})</span><b>${fmt(c.TotalSpent)} ₭</b></div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
       </div>
     `;
+    renderDashFilterBar();
     drawLineChart('dailyChart', a.dailySales);
   });
 }
+function renderDashFilterBar(){
+  const el = document.getElementById('dashFilterBar');
+  if(!el) return;
+  el.innerHTML = DASH_PRESETS.map(p=>`<button class="dash-filter-btn ${DASH_STATE.preset===p.key?'active':''}" onclick="selectDashPreset('${p.key}')">${p.label}</button>`).join('')
+    + `<input type="date" class="dash-date-input" id="dashFromInput" value="${DASH_STATE.from}" onchange="DASH_STATE.preset='custom';DASH_STATE.from=this.value;">`
+    + `<span style="color:var(--text-muted);">→</span>`
+    + `<input type="date" class="dash-date-input" id="dashToInput" value="${DASH_STATE.to}" onchange="DASH_STATE.preset='custom';DASH_STATE.to=this.value;">`
+    + `<button class="btn btn-primary btn-sm" onclick="applyDashCustomRange()">🔍 ຄົ້ນຫາ</button>`
+    + `<button class="icon-btn" style="width:34px;height:34px;" onclick="resetDashFilter()">✕</button>`;
+}
+function selectDashPreset(key){
+  DASH_STATE.preset = key;
+  if(key!=='custom'){ renderAdminDashboard(); } else { renderDashFilterBar(); }
+}
+function applyDashCustomRange(){
+  DASH_STATE.preset='custom';
+  DASH_STATE.from = document.getElementById('dashFromInput').value;
+  DASH_STATE.to = document.getElementById('dashToInput').value;
+  renderAdminDashboard();
+}
+function resetDashFilter(){ DASH_STATE = {preset:'today', from:null, to:null}; renderAdminDashboard(); }
+
 function drawLineChart(containerId, data){
   const w=600,h=180,pad=30;
   const max = Math.max(1, ...data.map(d=>d.sales));
