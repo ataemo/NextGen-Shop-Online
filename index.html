@@ -620,7 +620,7 @@ table tr:hover td{background:var(--primary-light);}
 .filter-tab .cnt{opacity:.75;font-weight:500;margin-left:2px;}
 .chip-select{padding:6px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-weight:700;color:var(--text);}
 .tag-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.svg-chart{width:100%;height:180px;}
+.svg-chart{width:100%;height:auto;display:block;}
 @keyframes skeletonPulse{0%,100%{opacity:.5;}50%{opacity:.9;}}
 .skeleton{background:var(--primary-light);border-radius:var(--radius-md);animation:skeletonPulse 1.4s ease-in-out infinite;}
 .skeleton-cat{width:76px;height:76px;border-radius:22px;}
@@ -2171,7 +2171,7 @@ function drawLineChart(containerId, data){
     }
   });
 
-  const svg = `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:230px;">
+  const svg = `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
     ${gridHTML}
     <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h-padB}" stroke="var(--border)" stroke-width="1"></line>
     <polygon points="${areaPoints}" fill="var(--primary-light)" opacity="0.55"></polygon>
