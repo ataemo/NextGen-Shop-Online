@@ -107,7 +107,8 @@ a{color:inherit;text-decoration:none;}
   #topCartBtn{display:none;}
 }
 .topbar .spacer{flex:1;}
-.desktop-nav{display:none;align-items:center;gap:4px;margin-left:10px;}
+.desktop-nav{display:none;align-items:stretch;gap:4px;margin-left:10px;height:44px;}
+.desktop-nav .dn-item{height:100%;}
 @media(min-width:900px){ .desktop-nav{display:flex;} }
 .desktop-nav .dn-item{
   padding:9px 16px;border-radius:12px;font-size:13px;font-weight:700;color:var(--text-muted);
@@ -118,7 +119,9 @@ a{color:inherit;text-decoration:none;}
 .dn-item-flash{
   background:linear-gradient(135deg,#FF3D3D,#FF7A00) !important;
   color:#fff !important;
-  padding:9px 14px !important;
+  padding:0 18px !important;
+  height:100%;
+  overflow:visible;
   animation:dnFlashPulse 1.6s infinite;
   box-shadow:0 6px 16px rgba(255,61,61,.4);
 }
@@ -128,8 +131,8 @@ a{color:inherit;text-decoration:none;}
   transform:scale(1.05);
 }
 .dn-flash-icon{
-  height:42px;
-  width:42px;
+  height:60px;
+  width:60px;
   object-fit:contain;
 }
 @keyframes dnFlashPulse{
