@@ -105,6 +105,8 @@ a{color:inherit;text-decoration:none;}
   .brand img{height:44px;width:44px;border-radius:12px;}
   .brand{font-size:22px;}
   #topCartBtn{display:none;}
+  #catTopCartBtn{display:none;}
+  #flashTopCartBtn{display:none;}
 }
 .topbar .spacer{flex:1;}
 .desktop-nav{display:none;align-items:stretch;gap:4px;margin-left:10px;height:44px;}
@@ -669,7 +671,6 @@ table tr:hover td{background:var(--primary-light);}
       <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
-    <button class="icon-btn" onclick="openSearch()"><span data-icon-key="search">🔍</span></button>
     <button class="icon-btn" id="topCartBtn" onclick="openCart()"><span data-icon-key="cart">🛒</span><span id="cartBadge" class="badge hide">0</span></button>
     <button class="icon-btn" onclick="openSideMenu()"><span data-icon-key="menu">⋮</span></button>
   </div>
@@ -739,7 +740,7 @@ table tr:hover td{background:var(--primary-light);}
       <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
-    <button class="icon-btn" onclick="openCart()">🛒<span id="cartBadge2" class="badge hide">0</span></button>
+    <button class="icon-btn" id="catTopCartBtn" onclick="openCart()">🛒<span id="cartBadge2" class="badge hide">0</span></button>
   </div>
   <div class="search-bar" style="margin-top:10px;">
     <input id="catSearchInput" placeholder="ຄົ້ນຫາສິນຄ້າ..." oninput="renderCategoryPageProducts();toggleSearchClear('catSearchInput','catClearBtn')">
@@ -770,7 +771,7 @@ table tr:hover td{background:var(--primary-light);}
       <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
-    <button class="icon-btn" style="background:#fff;color:#FF3D3D;box-shadow:0 4px 12px rgba(0,0,0,.25);" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
+    <button class="icon-btn" id="flashTopCartBtn" style="background:#fff;color:#FF3D3D;box-shadow:0 4px 12px rgba(0,0,0,.25);" onclick="openCart()">🛒<span id="cartBadge3" class="badge hide">0</span></button>
   </div>
   <div style="padding:14px 16px;">
     <div class="flash-countdown" style="display:inline-block;background:linear-gradient(135deg,#FF3D3D,#FF7A00);color:#fff;" id="flashPageCountdown">⏱ 00:00:00</div>
@@ -837,7 +838,7 @@ table tr:hover td{background:var(--primary-light);}
         <div class="field" style="margin-bottom:2px;"><label>ເບີໂທ *</label>
           <div class="phone-input-group">
             <div class="cc">🇱🇦 +856</div>
-            <input id="ckPhone" type="tel" placeholder="99999999" style="flex:1;">
+            <input id="ckPhone" type="tel" placeholder="2099998888" style="flex:1;">
           </div>
         </div>
         <div class="phone-hint">ໃສ່ພຽງ 8 ໂຕເລກ ບໍ່ຕ້ອງໃສ່ 020 ນຳໜ້າ (ລະບົບຈະຕື່ມລະຫັດປະເທດໃຫ້ອັດຕະໂນມັດ)</div>
@@ -896,7 +897,7 @@ table tr:hover td{background:var(--primary-light);}
   <div class="sheet-header"><h3>ຕິດຕາມອໍເດີ</h3><button class="close-x" onclick="closeSheet('myOrdersSheet')">✕</button></div>
   <div class="sheet-body">
     <div class="field" style="display:flex;gap:8px;">
-      <input id="trackPhone" placeholder="ໃສ່ເບີໂທທີ່ໃຊ້ສັ່ງຊື້">
+      <input id="trackPhone" placeholder="ໃສ່ເບີໂທທີ່ໃຊ້ສັ່ງຊື້ 2099998888">
       <button class="btn btn-primary btn-sm" onclick="trackOrders()">ຄົ້ນຫາ</button>
     </div>
     <div id="myOrdersList"></div>
@@ -1326,13 +1327,14 @@ function renderHero(){
       <div class="cap">${b.Title||''}</div>
     </div>`).join('');
   dots.innerHTML = banners.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('');
-  clearInterval(heroTimer);
+clearInterval(heroTimer);
   if(banners.length>1){
+    const speedMs = Number(DATA.settings.heroSlideSpeed || 4) * 1000;
     heroTimer = setInterval(()=>{
       STATE.heroIndex = (STATE.heroIndex+1) % banners.length;
       track.style.transform = `translateX(-${STATE.heroIndex*100}%)`;
       [...dots.children].forEach((d,i)=>d.classList.toggle('active', i===STATE.heroIndex));
-    }, 4000);
+    }, speedMs);
   }
 }
 
@@ -3185,6 +3187,7 @@ function renderAdminSettings(){
     const basicFields = [
       ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
       ['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນດ້ວຍ | )'],
+      ['heroSlideSpeed','⏱️ ຄວາມໄວສະໄລ້ Banner (ວິນາທີ ເຊັ່ນ 4)'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
       ['contactPhone','ເບີໂທຕິດຕໍ່'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ Facebook'],
@@ -3237,7 +3240,7 @@ function renderAdminSettings(){
 }
 function saveAllSettings(){
   const allKeys = [
-    'storeName','logoUrl','bannerText','promoTicker','currency','freeShippingMin','defaultShippingFee',
+    'storeName','logoUrl','bannerText','promoTicker','heroSlideSpeed','currency','freeShippingMin','defaultShippingFee',
     'bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','contactEmail','facebookUrl',
     'addressText','footerText','adminNotifyEmail','slackWebhookUrl',
     'primaryColor','primaryDarkColor','secondaryColor','accentDarkColor','bgColor','textColor','textMutedColor',
