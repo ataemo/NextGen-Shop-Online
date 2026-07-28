@@ -1968,6 +1968,8 @@ function doAdminLogout(){
 }
 function backToStore(){
   stopGlobalOrderWatcher();   // 👈 ເພີ່ມແຖວນີ້
+  document.getElementById('overlay').classList.remove('show');       // 👈 ເພີ່ມແຖວນີ້ໃໝ່
+  document.getElementById('adminSide').classList.remove('show');     // 👈 ເພີ່ມແຖວນີ້ໃໝ່
   document.getElementById('adminShell').classList.add('hide');
   document.getElementById('storefront').classList.remove('hide');
   gsRun('getInitData').then(d=>{
