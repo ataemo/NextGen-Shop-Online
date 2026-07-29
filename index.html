@@ -3297,17 +3297,39 @@ function renderAdminCustomers(){
       <div class="panel">
         <h4>ລູກຄ້າທັງໝົດ (${customers.length})</h4>
         <div class="table-wrap"><table>
-          <thead><tr><th>ຊື່</th><th>ເບີໂທ</th><th>ອໍເດີລວມ</th><th>ຍອດຊື້ລວມ</th><th>ຄະແນນ</th><th>ລະດັບ</th><th></th></tr></thead>
+          <thead><tr><th>ຊື່</th><th>ເບີໂທ</th><th>ອໍເດີລວມ</th><th>ຍອດຊື້ລວມ</th><th>ຄະແນນ</th><th>ລະດັບ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
           <tbody>${customers.map(c=>`
             <tr><td>${c.Name}</td><td>${c.Phone}</td><td>${c.TotalOrders}</td><td>${fmt(c.TotalSpent)}</td><td>${c.Points}</td>
             <td><span class="chip chip-paid">${c.Membership}</span></td>
-            <td><button class="btn btn-sm ${c.Blacklist==='Yes'?'btn-danger':'btn-outline'}" onclick="toggleBlacklist('${c.Phone}', ${c.Blacklist==='Yes'?false:true})">${c.Blacklist==='Yes'?'ຢູ່ໃນ Blacklist':'Blacklist'}</button></td></tr>`).join('')}
+            <td><button class="btn btn-sm ${c.Blacklist==='Yes'?'btn-danger':'btn-outline'}" onclick="toggleBlacklist('${c.Phone}', ${c.Blacklist==='Yes'?false:true})">${c.Blacklist==='Yes'?'ຢູ່ໃນ Blacklist':'Blacklist'}</button></td>
+            <td>
+              <button class="mini-btn" title="ແກ້ໄຂ" onclick='openCustomerForm(${JSON.stringify(c).replace(/'/g,"&apos;")})'>✏️</button>
+              <button class="mini-btn" title="ລຶບ" onclick="deleteCustomerAdmin('${c.Phone}')">🗑️</button>
+            </td></tr>`).join('')}
           </tbody></table></div>
       </div>`;
   });
 }
 function toggleBlacklist(phone, val){
   adminCall('adminSetBlacklist', phone, val).then(()=>{ toast('ອັບເດດແລ້ວ'); renderAdminCustomers(); });
+}
+
+// 👇 ເພີ່ມ 2 ຟັງຊັນນີ້ຕໍ່ທ້າຍ
+function openCustomerForm(existing){
+  openCrudForm({
+    saveFn:'adminSaveCustomer', onDone:renderAdminCustomers,
+    fields:[
+      {key:'Phone', label:'ເບີໂທ', readonly:true},
+      {key:'Name', label:'ຊື່ລູກຄ້າ'},
+      {key:'Address', label:'ທີ່ຢູ່'},
+      {key:'Membership', label:'ລະດັບສະມາຊິກ', type:'select', options:['Bronze','Silver','Gold','VIP']},
+      {key:'Points', label:'ຄະແນນສະສົມ', type:'number'}
+    ]
+  }, existing);
+}
+function deleteCustomerAdmin(phone){
+  if(!confirm('ຢືນຢັນລຶບລູກຄ້ານີ້? ຈະບໍ່ສາມາດກູ້ຄືນໄດ້')) return;
+  adminCall('adminDeleteCustomer', phone).then(()=>{ toast('ລຶບສຳເລັດ'); renderAdminCustomers(); });
 }
 
 /* ---------- SHIPPING ---------- */
