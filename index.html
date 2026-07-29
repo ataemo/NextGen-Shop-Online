@@ -2306,8 +2306,17 @@ function openAdminTab(tab){
       });
   } catch(e){}
 }
+let ADMIN_DATA_CACHE = {};
 function adminCall(fn, ...args){
-  return gsRun(fn, STATE.adminToken, ...args).catch(err=>{
+  const isGetter = fn.indexOf('adminGet') === 0 && args.length === 0;
+  if(isGetter && ADMIN_DATA_CACHE[fn] !== undefined){
+    return Promise.resolve(ADMIN_DATA_CACHE[fn]);
+  }
+  return gsRun(fn, STATE.adminToken, ...args).then(data=>{
+    if(isGetter){ ADMIN_DATA_CACHE[fn] = data; }
+    else { ADMIN_DATA_CACHE = {}; } // ບັນທຶກ/ລຶບ/ແກ້ໄຂ → ລ້າງ Cache ທັງໝົດ ເພື່ອໃຫ້ຂໍ້ມູນໃໝ່ສະເໝີ
+    return data;
+  }).catch(err=>{
     if(String(err.message).includes('SESSION_EXPIRED')){ toast('ໝົດເວລາເຂົ້າສູ່ລະບົບ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່','error'); doAdminLogout(); }
     else toast(err.message,'error');
     throw err;   // ← ອັນນີ້ຕ້ອງມີຢູ່ແລ້ວ (ມີແລ້ວໃນໂຄ້ດເດີມ, ບໍ່ຕ້ອງແກ້)
