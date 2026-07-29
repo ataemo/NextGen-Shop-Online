@@ -692,6 +692,18 @@ table tr:hover td{background:var(--primary-light);}
   margin-top:10px;background:#25D366;color:#fff;border-radius:12px;padding:10px;
   display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13px;
 }
+
+.contact-btn{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:16px;
+  background:var(--cbg,var(--primary));color:#fff;
+  font-weight:700;font-size:14px;margin-bottom:10px;
+  box-shadow:var(--shadow-soft);transition:transform .15s;
+}
+.contact-btn:active{transform:scale(.97);}
+.contact-btn .ic{font-size:22px;width:26px;text-align:center;flex-shrink:0;}
+.contact-btn .sub{font-size:11px;font-weight:500;opacity:.85;display:block;margin-top:2px;}
+
 .success-actions{display:flex;gap:10px;margin-top:6px;}
 .success-actions .btn{flex:1;}
 
@@ -845,7 +857,7 @@ table tr:hover td{background:var(--primary-light);}
   <button class="item" onclick="toggleTheme()"><span class="ic" data-icon-key="theme">🌗</span> <span id="themeLabel">ໂໝດມືດ / ໂໝດແຈ້ງ</span></button>
   <button class="item" onclick="openFlashPage()"><span class="ic">⚡</span> Flash Sale</button>
   <button class="item" onclick="openMyOrders()"><span class="ic">📦</span> ຕິດຕາມອໍເດີ</button>
-  <button class="item"><span class="ic" data-icon-key="contact">📞</span> <span id="sideContact">ຕິດຕໍ່ຮ້ານ</span></button>
+  <button class="item" onclick="openContactSheet()"><span class="ic" data-icon-key="contact">📞</span> ຊ່ອງທາງຕິດຕໍ່</button>
   <hr>
   <button class="item" onclick="openAdminLogin()" style="color:var(--primary);"><span class="ic" data-icon-key="admin">🔐</span> ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ (Admin)</button>
 </div>
@@ -948,6 +960,13 @@ table tr:hover td{background:var(--primary-light);}
     </div>
     <div id="myOrdersList"></div>
   </div>
+</div>
+
+<!-- Contact Channels Sheet -->
+<div class="sheet" id="contactSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><h3>📞 ຊ່ອງທາງຕິດຕໍ່ຮ້ານ</h3><button class="close-x" onclick="closeSheet('contactSheet')">✕</button></div>
+  <div class="sheet-body" id="contactChannelsList"></div>
 </div>
 
 <div class="modal-center-wrap hide" id="publicOrderDetailModal" onclick="if(event.target===this)closePublicOrderDetail()">
@@ -1886,6 +1905,52 @@ function toWhatsappLink(phone){
   else if(!p.startsWith('856')) p = '856'+p;
   return 'https://wa.me/'+p;
 }
+/* ============================================================
+   ຊ່ອງທາງຕິດຕໍ່ (Contact Channels)
+   ============================================================ */
+function buildContactLink(type, value){
+  if(!value) return '#';
+  const v = String(value).trim();
+  const isUrl = v.startsWith('http');
+  switch(type){
+    case 'phone':     return 'tel:'+v.replace(/[^0-9+]/g,'');
+    case 'whatsapp':  return toWhatsappLink(v);
+    case 'facebook':  return isUrl ? v : 'https://facebook.com/'+v.replace('@','');
+    case 'messenger': return isUrl ? v : 'https://m.me/'+v.replace('@','');
+    case 'instagram': return isUrl ? v : 'https://instagram.com/'+v.replace('@','');
+    case 'tiktok':    return isUrl ? v : 'https://tiktok.com/@'+v.replace('@','');
+    case 'line':      return isUrl ? v : 'https://line.me/ti/p/~'+v.replace('@','');
+    default: return '#';
+  }
+}
+const CONTACT_CHANNELS = [
+  {key:'contactPhone',   type:'phone',     label:'ໂທຫາຮ້ານ',  sub:'ໂທຫາໂດຍກົງ',        icon:'📞', color:'#146356'},
+  {key:'whatsappNumber', type:'whatsapp',  label:'WhatsApp',    sub:'ທັກແຊັດ',           icon:'💬', color:'#25D366'},
+  {key:'facebookUrl',    type:'facebook',  label:'Facebook',    sub:'ໜ້າ Page ຂອງຮ້ານ', icon:'📘', color:'#1877F2'},
+  {key:'messengerUrl',   type:'messenger', label:'Messenger',   sub:'ທັກຂໍ້ຄວາມ',        icon:'💠', color:'#0084FF'},
+  {key:'instagramUrl',   type:'instagram', label:'Instagram',   sub:'ຕິດຕາມ/ທັກຂໍ້ຄວາມ', icon:'📸', color:'#E1306C'},
+  {key:'tiktokUrl',      type:'tiktok',    label:'TikTok',      sub:'ຊົມວິດີໂອສິນຄ້າ',    icon:'🎵', color:'#111111'},
+  {key:'lineId',         type:'line',      label:'Line',        sub:'ທັກແຊັດ',           icon:'🟢', color:'#00C300'}
+];
+function renderContactChannels(){
+  const s = DATA.settings || {};
+  const html = CONTACT_CHANNELS.map(c=>{
+    const val = s[c.key];
+    if(!val) return '';
+    return `<a href="${buildContactLink(c.type, val)}" target="_blank" rel="noopener" class="contact-btn" style="--cbg:${c.color}">
+      <span class="ic">${c.icon}</span>
+      <span><span>${c.label}</span><span class="sub">${c.sub}</span></span>
+    </a>`;
+  }).join('');
+  document.getElementById('contactChannelsList').innerHTML = html ||
+    `<div class="empty-state"><div class="ic">📭</div>ຮ້ານຍັງບໍ່ໄດ້ຕັ້ງຄ່າຊ່ອງທາງຕິດຕໍ່<br><span style="font-size:11px;">ແອັດມິນສາມາດເພີ່ມໄດ້ຈາກໜ້າ "ຕັ້ງຄ່າ" ໃນລະບົບຫຼັງບ້ານ</span></div>`;
+}
+function openContactSheet(){
+  closeAllOverlays();
+  renderContactChannels();
+  openSheet('contactSheet');
+}
+
 function renderSuccessModal(o){
   const s = DATA.settings || {};
   const dateStr = new Date(o.date).toLocaleString('lo-LA', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -3350,7 +3415,8 @@ function renderAdminSettings(){
       ['heroSlideSpeed','⏱️ ຄວາມໄວສະໄລ້ Banner (ວິນາທີ ເຊັ່ນ 4)'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
-      ['contactPhone','ເບີໂທຕິດຕໍ່'], ['whatsappNumber','ເບີ WhatsApp (ຖ້າຕ່າງຈາກເບີໂທ)'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ Facebook'],
+      ['contactPhone','ເບີໂທຕິດຕໍ່'], ['whatsappNumber','ເບີ WhatsApp (ຖ້າຕ່າງຈາກເບີໂທ)'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ/username Facebook Page'],
+      ['messengerUrl','ລິ້ງ/username Messenger'], ['instagramUrl','ລິ້ງ/username Instagram'], ['tiktokUrl','ລິ້ງ/username TikTok'], ['lineId','Line ID'],
       ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່'],
       ['slackWebhookUrl','🔔 Slack Webhook URL']
     ];
@@ -3401,7 +3467,8 @@ function renderAdminSettings(){
 function saveAllSettings(){
   const allKeys = [
     'storeName','logoUrl','bannerText','promoTicker','heroSlideSpeed','currency','freeShippingMin','defaultShippingFee',
-    'bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','contactEmail','facebookUrl',
+    'bankName','bankAccountName','bankAccountNumber','qrImageUrl','contactPhone','whatsappNumber','contactEmail','facebookUrl',
+    'messengerUrl','instagramUrl','tiktokUrl','lineId',
     'addressText','footerText','adminNotifyEmail','slackWebhookUrl',
     'primaryColor','primaryDarkColor','secondaryColor','accentDarkColor','bgColor','textColor','textMutedColor',
     'dangerColor','successColor','cardRadius','fontChoice',
