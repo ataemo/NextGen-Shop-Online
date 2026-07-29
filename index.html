@@ -1923,21 +1923,22 @@ function buildContactLink(type, value){
   }
 }
 const CONTACT_CHANNELS = [
-  {key:'contactPhone',   type:'phone',     label:'ໂທຫາຮ້ານ',  sub:'ໂທຫາໂດຍກົງ',        icon:'📞', color:'#146356'},
-  {key:'whatsappNumber', type:'whatsapp',  label:'WhatsApp',    sub:'ທັກແຊັດ',           icon:'💬', color:'#25D366'},
-  {key:'facebookUrl',    type:'facebook',  label:'Facebook',    sub:'ໜ້າ Page ຂອງຮ້ານ', icon:'📘', color:'#1877F2'},
-  {key:'messengerUrl',   type:'messenger', label:'Messenger',   sub:'ທັກຂໍ້ຄວາມ',        icon:'💠', color:'#0084FF'},
-  {key:'instagramUrl',   type:'instagram', label:'Instagram',   sub:'ຕິດຕາມ/ທັກຂໍ້ຄວາມ', icon:'📸', color:'#E1306C'},
-  {key:'tiktokUrl',      type:'tiktok',    label:'TikTok',      sub:'ຊົມວິດີໂອສິນຄ້າ',    icon:'🎵', color:'#111111'},
-  {key:'lineId',         type:'line',      label:'Line',        sub:'ທັກແຊັດ',           icon:'🟢', color:'#00C300'}
+  {key:'contactPhone',   iconKey:'contactPhoneIcon', type:'phone',     label:'ໂທຫາຮ້ານ',  sub:'ໂທຫາໂດຍກົງ',        icon:'📞', color:'#146356'},
+  {key:'whatsappNumber', iconKey:'whatsappIcon',     type:'whatsapp',  label:'WhatsApp',    sub:'ທັກແຊັດ',           icon:'💬', color:'#25D366'},
+  {key:'facebookUrl',    iconKey:'facebookIcon',     type:'facebook',  label:'Facebook',    sub:'ໜ້າ Page ຂອງຮ້ານ', icon:'📘', color:'#1877F2'},
+  {key:'messengerUrl',   iconKey:'messengerIcon',    type:'messenger', label:'Messenger',   sub:'ທັກຂໍ້ຄວາມ',        icon:'💠', color:'#0084FF'},
+  {key:'instagramUrl',   iconKey:'instagramIcon',    type:'instagram', label:'Instagram',   sub:'ຕິດຕາມ/ທັກຂໍ້ຄວາມ', icon:'📸', color:'#E1306C'},
+  {key:'tiktokUrl',      iconKey:'tiktokIcon',       type:'tiktok',    label:'TikTok',      sub:'ຊົມວິດີໂອສິນຄ້າ',    icon:'🎵', color:'#111111'},
+  {key:'lineId',         iconKey:'lineIcon',         type:'line',      label:'Line',        sub:'ທັກແຊັດ',           icon:'🟢', color:'#00C300'}
 ];
 function renderContactChannels(){
   const s = DATA.settings || {};
   const html = CONTACT_CHANNELS.map(c=>{
     const val = s[c.key];
     if(!val) return '';
+    const icon = s[c.iconKey] || c.icon;
     return `<a href="${buildContactLink(c.type, val)}" target="_blank" rel="noopener" class="contact-btn" style="--cbg:${c.color}">
-      <span class="ic">${c.icon}</span>
+      <span class="ic">${icon}</span>
       <span><span>${c.label}</span><span class="sub">${c.sub}</span></span>
     </a>`;
   }).join('');
@@ -3459,6 +3460,18 @@ function renderAdminSettings(){
         <div class="field"><label>⚡ ຮູບໄອຄອນ Flash Sale (Bottom Nav)</label><input id="set_flashNavIconUrl" value="${s.flashNavIconUrl||''}"></div>
       </div>
 
+      <div class="panel"><h4>📞 ໄອຄອນຊ່ອງທາງຕິດຕໍ່ (ພິມ Emoji ແທນໄດ້)</h4>
+        <div class="row2">
+          <div class="field"><label>📞 ໂທຫາຮ້ານ</label><input id="set_contactPhoneIcon" value="${s.contactPhoneIcon||'📞'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>💬 WhatsApp</label><input id="set_whatsappIcon" value="${s.whatsappIcon||'💬'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>📘 Facebook</label><input id="set_facebookIcon" value="${s.facebookIcon||'📘'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>💠 Messenger</label><input id="set_messengerIcon" value="${s.messengerIcon||'💠'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>📸 Instagram</label><input id="set_instagramIcon" value="${s.instagramIcon||'📸'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>🎵 TikTok</label><input id="set_tiktokIcon" value="${s.tiktokIcon||'🎵'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>🟢 Line</label><input id="set_lineIcon" value="${s.lineIcon||'🟢'}" style="font-size:18px;text-align:center;"></div>
+        </div>
+      </div>
+
       <button class="btn btn-primary btn-block" onclick="saveAllSettings()">💾 ບັນທຶກການຕັ້ງຄ່າທັງໝົດ</button>
     `;
   });
@@ -3472,7 +3485,8 @@ function saveAllSettings(){
     'primaryColor','primaryDarkColor','secondaryColor','accentDarkColor','bgColor','textColor','textMutedColor',
     'dangerColor','successColor','cardRadius','fontChoice',
     'iconHome','iconCategory','iconCart','iconOrders','iconSearch','iconMenu','iconTheme','iconContact','iconAdmin',
-    'flashTitleIconUrl','flashNavIconUrl'
+    'flashTitleIconUrl','flashNavIconUrl',
+    'contactPhoneIcon','whatsappIcon','facebookIcon','messengerIcon','instagramIcon','tiktokIcon','lineIcon'
   ];
   const obj = {};
   allKeys.forEach(k=>{ const el=document.getElementById('set_'+k); if(el) obj[k]=el.value; });
