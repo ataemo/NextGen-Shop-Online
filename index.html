@@ -2388,9 +2388,10 @@ function renderAdminDashboard(){
     <div id="dashKpiWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>`;
   renderDashFilterBar();
   return loadDashRaw().then(raw=>{
-  if(STATE.adminTab!=='dashboard' && STATE.adminTab!=='analytics') return; // 👈
-  renderDashBody(raw, range);
-});
+    if(STATE.adminTab!=='dashboard' && STATE.adminTab!=='analytics') return; // 👈
+    renderDashBody(raw, range);
+  });
+}
 function renderDashBody(raw, range){
   const a = computeDashFromRaw(raw, range.from, range.to);
   document.getElementById('dashKpiWrap').innerHTML = `
@@ -2420,7 +2421,6 @@ function renderDashBody(raw, range){
       </div>
   `;
   drawLineChart('dailyChart', a.dailySales);
-}
 }
 function renderDashFilterBar(){
   const el = document.getElementById('dashFilterBar');
