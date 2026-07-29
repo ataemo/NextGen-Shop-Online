@@ -701,7 +701,8 @@ table tr:hover td{background:var(--primary-light);}
   box-shadow:var(--shadow-soft);transition:transform .15s;
 }
 .contact-btn:active{transform:scale(.97);}
-.contact-btn .ic{font-size:22px;width:26px;text-align:center;flex-shrink:0;}
+.contact-btn .ic{font-size:22px;width:26px;height:26px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.contact-btn .ic img{width:26px;height:26px;object-fit:contain;border-radius:6px;}
 .contact-btn .sub{font-size:11px;font-weight:500;opacity:.85;display:block;margin-top:2px;}
 
 .success-actions{display:flex;gap:10px;margin-top:6px;}
@@ -1937,8 +1938,11 @@ function renderContactChannels(){
     const val = s[c.key];
     if(!val) return '';
     const icon = s[c.iconKey] || c.icon;
+    const iconHTML = String(icon).trim().startsWith('http')
+      ? `<img src="${icon}" onerror="this.replaceWith(document.createTextNode('${c.icon}'))">`
+      : icon;
     return `<a href="${buildContactLink(c.type, val)}" target="_blank" rel="noopener" class="contact-btn" style="--cbg:${c.color}">
-      <span class="ic">${icon}</span>
+      <span class="ic">${iconHTML}</span>
       <span><span>${c.label}</span><span class="sub">${c.sub}</span></span>
     </a>`;
   }).join('');
@@ -3460,16 +3464,17 @@ function renderAdminSettings(){
         <div class="field"><label>⚡ ຮູບໄອຄອນ Flash Sale (Bottom Nav)</label><input id="set_flashNavIconUrl" value="${s.flashNavIconUrl||''}"></div>
       </div>
 
-      <div class="panel"><h4>📞 ໄອຄອນຊ່ອງທາງຕິດຕໍ່ (ພິມ Emoji ແທນໄດ້)</h4>
+      <div class="panel"><h4>📞 ໄອຄອນຊ່ອງທາງຕິດຕໍ່ (ພິມ Emoji ຫຼື ວາງລິ້ງຮູບ URL ກໍ່ໄດ້)</h4>
         <div class="row2">
-          <div class="field"><label>📞 ໂທຫາຮ້ານ</label><input id="set_contactPhoneIcon" value="${s.contactPhoneIcon||'📞'}" style="font-size:18px;text-align:center;"></div>
-          <div class="field"><label>💬 WhatsApp</label><input id="set_whatsappIcon" value="${s.whatsappIcon||'💬'}" style="font-size:18px;text-align:center;"></div>
-          <div class="field"><label>📘 Facebook</label><input id="set_facebookIcon" value="${s.facebookIcon||'📘'}" style="font-size:18px;text-align:center;"></div>
-          <div class="field"><label>💠 Messenger</label><input id="set_messengerIcon" value="${s.messengerIcon||'💠'}" style="font-size:18px;text-align:center;"></div>
-          <div class="field"><label>📸 Instagram</label><input id="set_instagramIcon" value="${s.instagramIcon||'📸'}" style="font-size:18px;text-align:center;"></div>
-          <div class="field"><label>🎵 TikTok</label><input id="set_tiktokIcon" value="${s.tiktokIcon||'🎵'}" style="font-size:18px;text-align:center;"></div>
-          <div class="field"><label>🟢 Line</label><input id="set_lineIcon" value="${s.lineIcon||'🟢'}" style="font-size:18px;text-align:center;"></div>
+          <div class="field"><label>📞 ໂທຫາຮ້ານ</label><input id="set_contactPhoneIcon" value="${s.contactPhoneIcon||'📞'}"></div>
+          <div class="field"><label>💬 WhatsApp</label><input id="set_whatsappIcon" value="${s.whatsappIcon||'💬'}"></div>
+          <div class="field"><label>📘 Facebook</label><input id="set_facebookIcon" value="${s.facebookIcon||'📘'}"></div>
+          <div class="field"><label>💠 Messenger</label><input id="set_messengerIcon" value="${s.messengerIcon||'💠'}"></div>
+          <div class="field"><label>📸 Instagram</label><input id="set_instagramIcon" value="${s.instagramIcon||'📸'}"></div>
+          <div class="field"><label>🎵 TikTok</label><input id="set_tiktokIcon" value="${s.tiktokIcon||'🎵'}"></div>
+          <div class="field"><label>🟢 Line</label><input id="set_lineIcon" value="${s.lineIcon||'🟢'}"></div>
         </div>
+        <div style="font-size:11px;color:var(--text-muted);">💡 ໃສ່ Emoji (ເຊັ່ນ 📞) ຫຼື ວາງລິ້ງຮູບພາບ (ເຊັ່ນ https://i.postimg.cc/...) ໄດ້ທັງສອງແບບ</div>
       </div>
 
       <button class="btn btn-primary btn-block" onclick="saveAllSettings()">💾 ບັນທຶກການຕັ້ງຄ່າທັງໝົດ</button>
