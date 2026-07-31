@@ -2324,7 +2324,13 @@ function openAdminTab(tab){
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
 
-  content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
+  // 👇 ຖ້າມີ Cache ຂອງແທັບນີ້ຢູ່ແລ້ວ → ສະແດງທັນທີ ບໍ່ຕິດໜ້າໂຫຼດ
+  const cached = adminTabCache[tab];
+  if(cached){
+    content.innerHTML = cached;
+  } else {
+    content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
+  }
 
   const renderers = {
     dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
@@ -2337,12 +2343,17 @@ function openAdminTab(tab){
 
   try {
     Promise.resolve((renderers[tab]||function(){})())
+      .then(()=>{ scheduleAdminCacheSave(tab); }) // 👈 ບັນທຶກ Cache ໄວ້ໃຊ້ຄັ້ງຕໍ່ໄປ
       .catch(err=>{
-        if(STATE.adminTab !== tab) return; // 👈 ເພີ່ມແຖວນີ້
-        content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger);">
-          ⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ: ${err && err.message ? err.message : 'Unknown error'}
-          <br><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button>
-        </div>`;
+        if(STATE.adminTab !== tab) return;
+        if(!cached){
+          content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger);">
+            ⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ: ${err && err.message ? err.message : 'Unknown error'}
+            <br><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button>
+          </div>`;
+        } else {
+          toast('ອັບເດດຂໍ້ມູນບໍ່ສຳເລັດ: '+(err&&err.message?err.message:''),'error');
+        }
       });
   } catch(e){}
 }
@@ -2754,16 +2765,39 @@ function stopGlobalOrderWatcher(){
 }
 function checkNewOrders(){
   if(!STATE.adminToken) return;
-  adminCall('adminGetDashboardRaw').then(raw=>{
+  gsRun('adminGetDashboardRaw', STATE.adminToken).then(raw=>{
     updateOrdersBadge(raw.statusCounts.pending);
     const totalOrders = raw.orders.length;
     if(lastKnownOrderCount && totalOrders > lastKnownOrderCount){
       playNotifySound();
       toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+(totalOrders-lastKnownOrderCount)+' ລາຍການ)','success');
+      // ລ້າງ Cache ທັງໝົດ ແລ້ວອັບເດດແທັບທີ່ກຳລັງເປີດຢູ່ ແບບບໍ່ຕິດໜ້າໂຫຼດ
+      ADMIN_DATA_CACHE = {};
+      DASH_RAW = null;
+      silentRefreshCurrentAdminTab();
+    } else if(lastKnownOrderCount){
+      // ຈຳນວນອໍເດີບໍ່ປ່ຽນ ແຕ່ອາດມີການແກ້ໄຂ (ສະຖານະ/Slip ຯລຯ) → ອັບເດດແທັບ orders/dashboard ເບົາໆ
+      if(STATE.adminTab==='orders' || STATE.adminTab==='dashboard'){
+        ADMIN_DATA_CACHE = {}; DASH_RAW = null;
+        silentRefreshCurrentAdminTab();
+      }
     }
     lastKnownOrderCount = totalOrders;
     localStorage.setItem('lao_last_order_count', totalOrders);
   }).catch(()=>{});
+}
+
+// 👇 ຟັງຊັນໃໝ່: ອັບເດດແທັບປັດຈຸບັນຢູ່ໃນພື້ນຫຼັງ ໂດຍບໍ່ລຶບ HTML ເກົ່າອອກກ່ອນ (ບໍ່ຕິດໜ້າໂຫຼດ)
+function silentRefreshCurrentAdminTab(){
+  const renderers = {
+    dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
+    flashsale: renderAdminFlashSale, featured: renderAdminFeatured,
+    categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
+    customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
+    analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
+  };
+  const fn = renderers[STATE.adminTab];
+  if(fn) Promise.resolve(fn()).then(()=>scheduleAdminCacheSave(STATE.adminTab));
 }
 function updateOrdersBadge(count){
   const badge = document.getElementById('ordersNotifyBadge');
@@ -2808,9 +2842,9 @@ function openPrintPreview(orderId){
     <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
     <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
     <div class="cart-summary-row total"><span>ລວມທັງໝົດ</span><span>${fmt(o.Total)} ₭</span></div>
-    <div class="panel" style="margin-top:10px;">
-      <div style="font-size:12px;"><b>${s.bankName||''}</b><br>ຊື່ບັນຊີ: ${s.bankAccountName||''}<br>ເລກບັນຊີ: ${s.bankAccountNumber||''}</div>
-      ${s.qrImageUrl?`<img src="${s.qrImageUrl}" style="width:120px;margin:8px auto 0;display:block;">`:''}
+    <div class="panel" style="margin-top:10px;text-align:center;">
+      <div style="font-size:12px;text-align:left;"><b>${s.bankName||''}</b><br>ຊື່ບັນຊີ: ${s.bankAccountName||''}<br>ເລກບັນຊີ: ${s.bankAccountNumber||''}</div>
+      ${s.qrImageUrl?`<img src="${s.qrImageUrl}" style="width:240px;max-width:100%;margin:10px auto 0;display:block;border-radius:10px;">`:''}
     </div>
   `;
   document.getElementById('orderPrintModal').classList.remove('hide');
@@ -2855,24 +2889,52 @@ function printInvoiceWindow(order){
   const items = order.Items||[];
   const win = window.open('','_blank');
   win.document.write(`
-    <html><head><title>ໃບສັ່ງຊື້ ${order.OrderID}</title>
+    <html><head><title>ໃບບິນ ${order.OrderID}</title>
     <style>
-      body{font-family:'Noto Sans Lao',sans-serif;padding:24px;color:#111;}
-      table{width:100%;border-collapse:collapse;margin-top:14px;}
-      th,td{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left;}
-      .center{text-align:center;} .right{text-align:right;}
-      h2{margin-bottom:0;} .muted{color:#555;font-size:12px;}
+      body{font-family:'Noto Sans Lao',sans-serif;margin:0;padding:0;color:#16211D;background:#fff;}
+      .invoice-wrap{max-width:480px;margin:0 auto;padding:28px 24px;}
+      .inv-logo{text-align:center;margin-bottom:6px;}
+      .inv-logo img{height:72px;border-radius:50%;object-fit:cover;}
+      .inv-store{text-align:center;font-size:20px;font-weight:800;color:#146356;margin-top:6px;}
+      .inv-sub{text-align:center;font-size:12px;color:#666;margin-top:2px;margin-bottom:16px;}
+      .inv-divider{border:none;border-top:1px dashed #ccc;margin:14px 0;}
+      .inv-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;}
+      .inv-row b{font-weight:700;}
+      table{width:100%;border-collapse:collapse;margin-top:10px;}
+      th,td{border:1px solid #e0e0e0;padding:8px;font-size:12.5px;text-align:left;}
+      th{background:#DCEAE6;color:#0D453B;}
+      .right{text-align:right;}
+      .inv-total-box{background:#DCEAE6;border-radius:12px;padding:12px 16px;margin:14px 0;display:flex;justify-content:space-between;align-items:center;}
+      .inv-total-box .lbl{font-size:13px;font-weight:700;color:#0D453B;}
+      .inv-total-box .val{font-size:19px;font-weight:800;color:#0D453B;}
+      .inv-pay-box{text-align:center;border:1px solid #e0e0e0;border-radius:14px;padding:14px;margin-top:16px;}
+      .inv-pay-box img{width:230px;max-width:100%;margin:10px auto 0;border-radius:10px;display:block;}
+      .inv-footer{text-align:center;font-size:11.5px;color:#888;margin-top:20px;}
+      @media print{ body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
     </style></head><body>
-    <div class="center"><h2>${s.storeName||'LAO SHOP'}</h2><div class="muted">${s.addressText||''} · ${s.contactPhone||''}</div></div>
-    <hr>
-    <p><b>ເລກທີໃບສັ່ງຊື້:</b> ${order.OrderID} &nbsp; <b>ວັນທີ:</b> ${new Date(order.Date).toLocaleString('lo-LA')}</p>
-    <p><b>ລູກຄ້າ:</b> ${order.CustomerName} &nbsp; <b>ເບີໂທ:</b> ${order.Phone}</p>
-    <p><b>ທີ່ຢູ່:</b> ${order.Address}, ${order.Village}, ${order.District}, ${order.Province}</p>
-    <table><thead><tr><th>ສິນຄ້າ</th><th>ຈຳນວນ</th><th>ລາຄາ</th><th>ລວມ</th></tr></thead>
-    <tbody>${items.map(i=>`<tr><td>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')}</td><td>${i.Qty}</td><td>${fmt(i.Price)}</td><td>${fmt(i.LineTotal)}</td></tr>`).join('')}</tbody></table>
-    <p class="right">ລວມຍ່ອຍ: ${fmt(order.Subtotal)} ₭<br>ຄ່າຂົນສົ່ງ: ${fmt(order.ShippingFee)} ₭<br>ສ່ວນຫຼຸດ: ${fmt(order.Discount)} ₭<br><b>ລວມທັງໝົດ: ${fmt(order.Total)} ₭</b></p>
-    <hr>
-    <p class="muted"><b>${s.bankName||''}</b> — ${s.bankAccountName||''} — ${s.bankAccountNumber||''}<br>ຕິດຕໍ່: ${s.contactPhone||''}</p>
+    <div class="invoice-wrap">
+      <div class="inv-logo">${s.logoUrl?`<img src="${s.logoUrl}">`:''}</div>
+      <div class="inv-store">${s.storeName||'LAO SHOP'}</div>
+      <div class="inv-sub">${s.addressText||''} · ${s.contactPhone||''}</div>
+      <hr class="inv-divider">
+      <div class="inv-row"><span>ເລກທີໃບສັ່ງຊື້</span><b>${order.OrderID}</b></div>
+      <div class="inv-row"><span>ວັນທີ</span><span>${new Date(order.Date).toLocaleString('lo-LA')}</span></div>
+      <div class="inv-row"><span>ລູກຄ້າ</span><span>${order.CustomerName} · ${order.Phone}</span></div>
+      <div class="inv-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[order.Address,order.Village,order.District,order.Province].filter(Boolean).join(', ')}</span></div>
+      <table>
+        <thead><tr><th>ສິນຄ້າ</th><th>ຈຳນວນ</th><th class="right">ລາຄາ</th><th class="right">ລວມ</th></tr></thead>
+        <tbody>${items.map(i=>`<tr><td>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')}</td><td>${i.Qty}</td><td class="right">${fmt(i.Price)}</td><td class="right">${fmt(i.LineTotal)}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="inv-row" style="margin-top:10px;"><span>ລວມຍ່ອຍ</span><span>${fmt(order.Subtotal)} ₭</span></div>
+      <div class="inv-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(order.ShippingFee)} ₭</span></div>
+      <div class="inv-row"><span>ສ່ວນຫຼຸດ</span><span>-${fmt(order.Discount)} ₭</span></div>
+      <div class="inv-total-box"><span class="lbl">ລວມທັງໝົດ</span><span class="val">${fmt(order.Total)} ₭</span></div>
+      <div class="inv-pay-box">
+        <div style="font-size:12.5px;"><b>${s.bankName||''}</b><br>ຊື່ບັນຊີ: ${s.bankAccountName||''}<br>ເລກບັນຊີ: ${s.bankAccountNumber||''}</div>
+        ${s.qrImageUrl?`<img src="${s.qrImageUrl}">`:''}
+      </div>
+      <div class="inv-footer">ຂອບໃຈທີ່ໃຊ້ບໍລິການ 🙏 · ${s.footerText||''}</div>
+    </div>
     <script>window.print()<\/script>
     </body></html>`);
   win.document.close();
