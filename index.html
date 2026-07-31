@@ -2438,15 +2438,20 @@ function computeDashFromRaw(raw, fromStr, toStr){
 function renderAdminDashboard(){
   const range = computeDashRange(DASH_STATE.preset);
   DASH_STATE.from = range.from; DASH_STATE.to = range.to;
-  document.getElementById('adminContent').innerHTML = `
-    <div class="panel">
-      <div class="dash-filter-bar" id="dashFilterBar"></div>
-      <div class="dash-range-label">📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b></div>
-    </div>
-    <div id="dashKpiWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>`;
-  renderDashFilterBar();
+
+  // 👇 ຖ້າກອບໜ້າ (filter bar) ຖືກສ້າງໄວ້ແລ້ວ → ບໍ່ຕ້ອງລຶບ/ໂຫຼດຊ້ຳ, ອັບເດດສະເພາະຕົວເລກ
+  const alreadyRendered = document.querySelector('#adminContent .dash-filter-bar');
+  if(!alreadyRendered){
+    document.getElementById('adminContent').innerHTML = `
+      <div class="panel">
+        <div class="dash-filter-bar" id="dashFilterBar"></div>
+        <div class="dash-range-label">📅 ສະແດງຂໍ້ມູນ: <b>${range.from}</b> ຫາ <b>${range.to}</b></div>
+      </div>
+      <div id="dashKpiWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>`;
+    renderDashFilterBar();
+  }
   return loadDashRaw().then(raw=>{
-    if(STATE.adminTab!=='dashboard' && STATE.adminTab!=='analytics') return; // 👈
+    if(STATE.adminTab!=='dashboard' && STATE.adminTab!=='analytics') return;
     renderDashBody(raw, range);
   });
 }
@@ -2827,7 +2832,9 @@ function openPrintPreview(orderId){
   const s = DATA.settings;
   document.getElementById('orderPrintBody').innerHTML = `
     <div style="text-align:center;margin-bottom:10px;">
-      ${s.logoUrl?`<img src="${s.logoUrl}" style="height:50px;margin-bottom:6px;">`:''}
+      ${s.logoUrl
+        ? `<img src="${s.logoUrl}" style="height:72px;width:72px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;">`
+        : `<div style="height:72px;width:72px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;margin:0 auto 8px;">${(s.storeName||'L').charAt(0)}</div>`}
       <h3 style="margin:4px 0;">${s.storeName||'LAO SHOP'}</h3>
       <div style="font-size:12px;color:var(--text-muted);">${s.contactPhone||''} · ${s.addressText||''}</div>
     </div>
@@ -2913,7 +2920,9 @@ function printInvoiceWindow(order){
       @media print{ body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
     </style></head><body>
     <div class="invoice-wrap">
-      <div class="inv-logo">${s.logoUrl?`<img src="${s.logoUrl}">`:''}</div>
+      <div class="inv-logo">${s.logoUrl
+        ? `<img src="${s.logoUrl}">`
+        : `<div style="height:72px;width:72px;border-radius:50%;background:#146356;color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;margin:0 auto;">${(s.storeName||'L').charAt(0)}</div>`}</div>
       <div class="inv-store">${s.storeName||'LAO SHOP'}</div>
       <div class="inv-sub">${s.addressText||''} · ${s.contactPhone||''}</div>
       <hr class="inv-divider">
