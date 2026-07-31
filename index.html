@@ -2271,6 +2271,7 @@ const ADMIN_MENU = [
   {id:'customers', label:'ລູກຄ້າ', ic:'👥', roles:['Administrator','Manager','Sales']},
   {id:'shipping', label:'ຂົນສົ່ງ', ic:'🚚', roles:['Administrator','Manager','Sales']},
   {id:'expenses', label:'ລາຍຈ່າຍ', ic:'💸', roles:['Administrator','Manager','Accountant']},
+  {id:'purchases', label:'ຈັດຊື້ສິນຄ້າ', ic:'🛒', roles:['Administrator','Manager','Accountant','Warehouse']},
   {id:'analytics', label:'ວິເຄາະຂໍ້ມູນ', ic:'📈', roles:['Administrator','Manager','Accountant']},
   {id:'users', label:'ຜູ້ໃຊ້ / Admin', ic:'🛡️', roles:['Administrator','Manager']},
   {id:'settings', label:'ຕັ້ງຄ່າ', ic:'⚙️', roles:['Administrator','Manager']},
@@ -2338,7 +2339,8 @@ function openAdminTab(tab){
     featured: renderAdminFeatured,
     categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
     customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
-    analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
+    analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings,
+    purchases: renderAdminPurchases
   };
 
   try {
@@ -2798,7 +2800,8 @@ function silentRefreshCurrentAdminTab(){
     flashsale: renderAdminFlashSale, featured: renderAdminFeatured,
     categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
     customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
-    analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings
+    analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings,
+    purchases: renderAdminPurchases
   };
   const fn = renderers[STATE.adminTab];
   if(fn) Promise.resolve(fn()).then(()=>scheduleAdminCacheSave(STATE.adminTab));
@@ -3513,6 +3516,219 @@ function openExpenseForm(){
 
 /* ---------- ANALYTICS (detail page) ---------- */
 function renderAdminAnalytics(){ renderAdminDashboard(); }
+/* ---------- ຈັດຊື້ສິນຄ້າ (Purchases) ---------- */
+let PURCHASES_CACHE = [];
+let purchaseStatusFilter = 'all';
+let purchaseImgDataUrl = '';
+const PURCHASE_STATUS_LIST = ['Ordered','Shipping','Arrived','Cancelled'];
+const PURCHASE_STATUS_LABEL = {Ordered:'ສັ່ງແລ້ວ', Shipping:'ກຳລັງຂົນສົ່ງ', Arrived:'ຮອດແລ້ວ', Cancelled:'ຍົກເລີກ'};
+const PURCHASE_STATUS_CHIP = {Ordered:'chip-pending', Shipping:'chip-shipping', Arrived:'chip-completed', Cancelled:'chip-cancelled'};
+
+function purchaseCalc(costPrice, qty, shippingCost, profitPercent, profitAmount){
+  const totalCost = (Number(costPrice||0) * Number(qty||0)) + Number(shippingCost||0);
+  const costPerUnit = Number(qty||0) > 0 ? totalCost / Number(qty) : 0;
+  let sellingPrice;
+  if(Number(profitPercent||0) > 0) sellingPrice = costPerUnit * (1 + Number(profitPercent)/100);
+  else sellingPrice = costPerUnit + Number(profitAmount||0);
+  return { totalCost: Math.round(totalCost), costPerUnit: Math.round(costPerUnit), sellingPrice: Math.round(sellingPrice) };
+}
+
+function renderAdminPurchases(){
+  return adminCall('adminGetPurchases').then(list=>{
+    if(STATE.adminTab!=='purchases') return;
+    PURCHASES_CACHE = list;
+
+    const pending = list.filter(p=>p.Status!=='Arrived' && p.Status!=='Cancelled');
+    const totalSpentThisMonth = list.filter(p=>{
+      const d = new Date(p.Date); const now = new Date();
+      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear() && p.Status!=='Cancelled';
+    }).reduce((s,p)=>s+Number(p.TotalCost||0),0);
+    const incomingQty = pending.reduce((s,p)=>s+Number(p.Qty||0),0);
+
+    document.getElementById('adminContent').innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:#3B82F6;--kpi-bg:#DBEAFE;"><div class="icon-badge">💰</div><div class="lbl">ຍອດຈັດຊື້ເດືອນນີ້</div><div class="val">${fmt(totalSpentThisMonth)} ₭</div></div>
+        <div class="kpi-card" style="--kpi-color:#F59E0B;--kpi-bg:#FEF3C7;"><div class="icon-badge">🚚</div><div class="lbl">ລໍຖ້າ/ກຳລັງມາ</div><div class="val">${pending.length} ອໍເດີ</div></div>
+        <div class="kpi-card" style="--kpi-color:#10B981;--kpi-bg:#D1FAE5;"><div class="icon-badge">📦</div><div class="lbl">ຈຳນວນສິນຄ້າກຳລັງມາ</div><div class="val">${incomingQty} ອັນ</div></div>
+      </div>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+          <h4 style="margin:0;">🛒 ລາຍການຈັດຊື້ (${list.length})</h4>
+          <button class="btn btn-primary btn-sm" onclick="openPurchaseForm()">+ ເພີ່ມການຈັດຊື້</button>
+        </div>
+        <div class="order-filter-tabs" id="purchaseFilterTabs"></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>ຮູບ</th><th>ສິນຄ້າ</th><th>ຜູ້ສະໜອງ</th><th>ຈຳນວນ</th><th>ຕົ້ນທຶນ/ໜ່ວຍ</th><th>ຄ່າຂົນສົ່ງ</th><th>ຕົ້ນທຶນລວມ</th><th>ລາຄາຂາຍ</th><th>ວັນສັ່ງ</th><th>ຄາດວ່າຮອດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
+          <tbody id="purchasesTableBody"></tbody>
+        </table></div>
+      </div>`;
+    renderPurchaseFilterTabs();
+    renderPurchasesTable();
+  });
+}
+
+function renderPurchaseFilterTabs(){
+  const el = document.getElementById('purchaseFilterTabs');
+  if(!el) return;
+  const filters = [{key:'all',label:'ທັງໝົດ'}, ...PURCHASE_STATUS_LIST.map(s=>({key:s,label:PURCHASE_STATUS_LABEL[s]}))];
+  el.innerHTML = filters.map(f=>{
+    const count = f.key==='all' ? PURCHASES_CACHE.length : PURCHASES_CACHE.filter(p=>p.Status===f.key).length;
+    return `<button class="filter-tab ${purchaseStatusFilter===f.key?'active':''}" onclick="setPurchaseFilter('${f.key}')">${f.label} <span class="cnt">${count}</span></button>`;
+  }).join('');
+}
+function setPurchaseFilter(key){ purchaseStatusFilter=key; renderPurchaseFilterTabs(); renderPurchasesTable(); }
+
+function renderPurchasesTable(){
+  const body = document.getElementById('purchasesTableBody');
+  if(!body) return;
+  let list = PURCHASES_CACHE.filter(p=> purchaseStatusFilter==='all' || p.Status===purchaseStatusFilter);
+  if(!list.length){ body.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text-muted);">ບໍ່ພົບລາຍການ</td></tr>`; return; }
+  body.innerHTML = list.map(p=>`
+    <tr>
+      <td><img src="${p.ImageURL||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--primary-light);"></td>
+      <td>${p.ProductName}</td>
+      <td>${p.Supplier||'-'}</td>
+      <td>${p.Qty}</td>
+      <td>${fmt(p.CostPrice)} ₭</td>
+      <td>${fmt(p.ShippingCost)} ₭</td>
+      <td style="font-weight:700;">${fmt(p.TotalCost)} ₭</td>
+      <td style="color:var(--primary);font-weight:700;">${fmt(p.SellingPrice)} ₭</td>
+      <td style="font-size:12px;">${p.Date?new Date(p.Date).toLocaleDateString('lo-LA'):'-'}</td>
+      <td style="font-size:12px;">${p.ExpectedArrival?new Date(p.ExpectedArrival).toLocaleDateString('lo-LA'):'-'}</td>
+      <td><span class="chip ${PURCHASE_STATUS_CHIP[p.Status]||'chip-pending'}">${PURCHASE_STATUS_LABEL[p.Status]||p.Status}</span></td>
+      <td>
+        ${p.Status!=='Arrived' && p.Status!=='Cancelled' ? `<button class="mini-btn" title="ຮັບເຂົ້າສາງ" onclick="receivePurchase('${p.ID}')">📥</button>` : ''}
+        <button class="mini-btn" title="ແກ້ໄຂ" onclick='openPurchaseForm(${JSON.stringify(p).replace(/'/g,"&apos;")})'>✏️</button>
+        <button class="mini-btn" title="ລຶບ" onclick="deletePurchaseAdmin('${p.ID}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function receivePurchase(id){
+  if(!confirm('ຢືນຢັນວ່າສິນຄ້າ "ຮອດແລ້ວ"? ຖ້າເຊື່ອມກັບສິນຄ້າໃນລະບົບ ສະຕັອກຈະຖືກບວກເພີ່ມອັດຕະໂນມັດ')) return;
+  adminCall('adminReceivePurchase', id).then(()=>{
+    toast('ຮັບເຂົ້າສາງສຳເລັດ! ອັບເດດສະຕັອກແລ້ວ');
+    ADMIN_DATA_CACHE = {};
+    renderAdminPurchases();
+  });
+}
+function deletePurchaseAdmin(id){
+  if(!confirm('ຢືນຢັນລຶບລາຍການຈັດຊື້ນີ້?')) return;
+  adminCall('adminDeletePurchase', id).then(()=>{ toast('ລຶບສຳເລັດ'); renderAdminPurchases(); });
+}
+
+let purchaseFormExisting = null;
+function openPurchaseForm(existing){
+  purchaseFormExisting = existing || null;
+  purchaseImgDataUrl = '';
+  adminCall('adminGetProducts').then(products=>{
+    const linkOptions = ['<option value="">— ບໍ່ເຊື່ອມ (ສິນຄ້າໃໝ່) —</option>']
+      .concat(products.map(p=>`<option value="${p.ID}" ${existing&&existing.LinkedProductID===p.ID?'selected':''}>${p.Name} (ສະຕັອກປັດຈຸບັນ ${p.Stock})</option>`));
+
+    document.getElementById('crudModalTitle').textContent = existing ? 'ແກ້ໄຂການຈັດຊື້' : 'ເພີ່ມການຈັດຊື້ໃໝ່';
+    document.getElementById('crudFormBody').innerHTML = `
+      <div class="field"><label>ຮູບສິນຄ້າ</label>
+        <label class="upload-dropzone" id="poDropzone" for="poImgFile">
+          <div class="cloud-ic">☁️</div>
+          <div class="dz-text">${existing&&existing.ImageURL?'✅ ມີຮູບແລ້ວ (ກົດເພື່ອປ່ຽນ)':'ກົດເພື່ອເລືອກຮູບສິນຄ້າ'}</div>
+          <input type="file" id="poImgFile" accept="image/*" onchange="previewPurchaseImg(event)">
+        </label>
+        <img id="poImgPreview" src="${existing&&existing.ImageURL?existing.ImageURL:''}" class="${existing&&existing.ImageURL?'':'hide'}" style="width:80px;margin-top:8px;border-radius:10px;">
+      </div>
+      <div class="field"><label>ຊື່ສິນຄ້າ</label><input id="po_ProductName" value="${existing?existing.ProductName||'':''}"></div>
+      <div class="field"><label>ເຊື່ອມກັບສິນຄ້າໃນລະບົບ (ຈະບວກສະຕັອກອັດຕະໂນມັດເມື່ອຮັບເຂົ້າສາງ)</label>
+        <select id="po_LinkedProductID">${linkOptions.join('')}</select>
+      </div>
+      <div class="field"><label>ຜູ້ສະໜອງ / ຮ້ານທີ່ສັ່ງ</label><input id="po_Supplier" value="${existing?existing.Supplier||'':''}"></div>
+      <div class="row2">
+        <div class="field"><label>ຈຳນວນ (Qty)</label><input id="po_Qty" type="number" value="${existing?existing.Qty||1:1}" oninput="updatePurchaseCalcPreview()"></div>
+        <div class="field"><label>ຕົ້ນທຶນ/ໜ່ວຍ</label><input id="po_CostPrice" type="number" value="${existing?existing.CostPrice||0:0}" oninput="updatePurchaseCalcPreview()"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>ຄ່າຂົນສົ່ງລວມ (ທັງອໍເດີ)</label><input id="po_ShippingCost" type="number" value="${existing?existing.ShippingCost||0:0}" oninput="updatePurchaseCalcPreview()"></div>
+        <div class="field"><label>ກຳໄລທີ່ຕ້ອງການ (%)</label><input id="po_ProfitPercent" type="number" value="${existing?existing.ProfitPercent||30:30}" oninput="updatePurchaseCalcPreview()"></div>
+      </div>
+      <div style="background:var(--primary-light);border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+        <div class="cart-summary-row"><span>ຕົ້ນທຶນລວມ (ສິນຄ້າ+ຂົນສົ່ງ)</span><b id="poCalcTotal">0 ₭</b></div>
+        <div class="cart-summary-row"><span>ຕົ້ນທຶນ/ໜ່ວຍ (ລວມຂົນສົ່ງແລ້ວ)</span><b id="poCalcUnit">0 ₭</b></div>
+        <div class="cart-summary-row total"><span>💰 ລາຄາຂາຍແນະນຳ</span><span id="poCalcSell" style="color:var(--primary-dark);">0 ₭</span></div>
+      </div>
+      <div class="field"><label>ລາຄາຂາຍຈິງ (ແກ້ໄຂເອງໄດ້ ຖ້າບໍ່ຢາກໃຊ້ຄ່າແນະນຳ)</label><input id="po_SellingPrice" type="number" value="${existing?existing.SellingPrice||0:0}"></div>
+      <div class="row2">
+        <div class="field"><label>ວັນທີສັ່ງຊື້</label><input id="po_Date" type="date" value="${existing&&existing.Date?new Date(existing.Date).toISOString().slice(0,10):new Date().toISOString().slice(0,10)}"></div>
+        <div class="field"><label>ຄາດວ່າຈະຮອດວັນທີ</label><input id="po_ExpectedArrival" type="date" value="${existing&&existing.ExpectedArrival?new Date(existing.ExpectedArrival).toISOString().slice(0,10):''}"></div>
+      </div>
+      <div class="field"><label>ສະຖານະ</label>
+        <select id="po_Status">${PURCHASE_STATUS_LIST.map(s=>`<option value="${s}" ${existing&&existing.Status===s?'selected':''}>${PURCHASE_STATUS_LABEL[s]}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>ໝາຍເຫດ</label><textarea id="po_Note">${existing?existing.Note||'':''}</textarea></div>
+    `;
+    document.getElementById('crudModal').classList.remove('hide');
+    // ປ່ຽນປຸ່ມ Submit ໃຫ້ເອີ້ນຟັງຊັນສະເພາະ ຈັດຊື້ (ບໍ່ໃຊ້ submitCrudForm ເດີມ)
+    const modal = document.getElementById('crudModal');
+    const submitBtn = modal.querySelector('.btn-primary.btn-block');
+    submitBtn.setAttribute('onclick','submitPurchaseForm()');
+    updatePurchaseCalcPreview();
+  });
+}
+function previewPurchaseImg(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    purchaseImgDataUrl = reader.result;
+    document.getElementById('poImgPreview').src = purchaseImgDataUrl;
+    document.getElementById('poImgPreview').classList.remove('hide');
+    document.getElementById('poDropzone').classList.add('has-file');
+    document.getElementById('poDropzone').querySelector('.dz-text').textContent = '✅ ' + file.name;
+  };
+  reader.readAsDataURL(file);
+}
+function updatePurchaseCalcPreview(){
+  const qty = Number(document.getElementById('po_Qty').value||0);
+  const costPrice = Number(document.getElementById('po_CostPrice').value||0);
+  const shippingCost = Number(document.getElementById('po_ShippingCost').value||0);
+  const profitPercent = Number(document.getElementById('po_ProfitPercent').value||0);
+  const calc = purchaseCalc(costPrice, qty, shippingCost, profitPercent, 0);
+  document.getElementById('poCalcTotal').textContent = fmt(calc.totalCost)+' ₭';
+  document.getElementById('poCalcUnit').textContent = fmt(calc.costPerUnit)+' ₭';
+  document.getElementById('poCalcSell').textContent = fmt(calc.sellingPrice)+' ₭';
+  const sellInput = document.getElementById('po_SellingPrice');
+  if(sellInput && (!sellInput.value || Number(sellInput.value)===0)) sellInput.value = calc.sellingPrice;
+}
+function submitPurchaseForm(){
+  const obj = purchaseFormExisting ? Object.assign({}, purchaseFormExisting) : {};
+  obj.ProductName = document.getElementById('po_ProductName').value.trim();
+  obj.LinkedProductID = document.getElementById('po_LinkedProductID').value;
+  obj.Supplier = document.getElementById('po_Supplier').value.trim();
+  obj.Qty = Number(document.getElementById('po_Qty').value||0);
+  obj.CostPrice = Number(document.getElementById('po_CostPrice').value||0);
+  obj.ShippingCost = Number(document.getElementById('po_ShippingCost').value||0);
+  obj.ProfitPercent = Number(document.getElementById('po_ProfitPercent').value||0);
+  obj.SellingPrice = Number(document.getElementById('po_SellingPrice').value||0);
+  obj.Date = document.getElementById('po_Date').value;
+  obj.ExpectedArrival = document.getElementById('po_ExpectedArrival').value;
+  obj.Status = document.getElementById('po_Status').value;
+  obj.Note = document.getElementById('po_Note').value;
+  if(!obj.ImageURL) obj.ImageURL = '';
+
+  if(!obj.ProductName){ toast('ກະລຸນາໃສ່ຊື່ສິນຄ້າ','error'); return; }
+
+  function doSave(){
+    adminCall('adminSavePurchase', obj).then(()=>{
+      toast('ບັນທຶກສຳເລັດ');
+      document.getElementById('crudModal').classList.add('hide');
+      renderAdminPurchases();
+    });
+  }
+  if(purchaseImgDataUrl){
+    adminCall('adminUploadImage', purchaseImgDataUrl, (obj.ProductName||'purchase')+'_'+Date.now()).then(res=>{
+      obj.ImageURL = res.url;
+      doSave();
+    });
+  } else {
+    doSave();
+  }
+}
 
 /* ---------- USERS / ADMINS ---------- */
 function renderAdminUsers(){
