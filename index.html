@@ -3558,7 +3558,7 @@ function renderAdminPurchases(){
         </div>
         <div class="order-filter-tabs" id="purchaseFilterTabs"></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ຮູບ</th><th>ສິນຄ້າ</th><th>ຜູ້ສະໜອງ</th><th>ຈຳນວນ</th><th>ຕົ້ນທຶນ/ໜ່ວຍ</th><th>ຄ່າຂົນສົ່ງ</th><th>ຕົ້ນທຶນລວມ</th><th>ລາຄາຂາຍ</th><th>ວັນສັ່ງ</th><th>ຄາດວ່າຮອດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
+          <thead><tr><th>ຮູບ</th><th>ສິນຄ້າ</th><th>ຜູ້ສະໜອງ</th><th>ຈຳນວນ</th><th>ຕົ້ນທຶນ/ໜ່ວຍ</th><th>ຄ່າຂົນສົ່ງ</th><th>ຕົ້ນທຶນລວມ</th><th>ລາຄາຂາຍ</th><th>ກຳໄລ/ໜ່ວຍ</th><th>ວັນສັ່ງ</th><th>ຄາດວ່າຮອດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
           <tbody id="purchasesTableBody"></tbody>
         </table></div>
       </div>`;
@@ -3583,16 +3583,19 @@ function renderPurchasesTable(){
   if(!body) return;
   let list = PURCHASES_CACHE.filter(p=> purchaseStatusFilter==='all' || p.Status===purchaseStatusFilter);
   if(!list.length){ body.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text-muted);">ບໍ່ພົບລາຍການ</td></tr>`; return; }
-  body.innerHTML = list.map(p=>`
+  body.innerHTML = list.map(p=>{
+    const profitPerUnit = Number(p.SellingPrice||0) - Number(p.CostPerUnit||0);
+    return `
     <tr>
       <td><img src="${p.ImageURL||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--primary-light);"></td>
       <td>${p.ProductName}</td>
       <td>${p.Supplier||'-'}</td>
-      <td>${p.Qty}</td>
+      <td>${p.Qty} ${p.Unit||''}</td>
       <td>${fmt(p.CostPrice)} ₭</td>
       <td>${fmt(p.ShippingCost)} ₭</td>
       <td style="font-weight:700;">${fmt(p.TotalCost)} ₭</td>
       <td style="color:var(--primary);font-weight:700;">${fmt(p.SellingPrice)} ₭</td>
+      <td style="color:${profitPerUnit>=0?'var(--success)':'var(--danger)'};font-weight:700;">${fmt(profitPerUnit)} ₭</td>
       <td style="font-size:12px;">${p.Date?new Date(p.Date).toLocaleDateString('lo-LA'):'-'}</td>
       <td style="font-size:12px;">${p.ExpectedArrival?new Date(p.ExpectedArrival).toLocaleDateString('lo-LA'):'-'}</td>
       <td><span class="chip ${PURCHASE_STATUS_CHIP[p.Status]||'chip-pending'}">${PURCHASE_STATUS_LABEL[p.Status]||p.Status}</span></td>
@@ -3601,7 +3604,8 @@ function renderPurchasesTable(){
         <button class="mini-btn" title="ແກ້ໄຂ" onclick='openPurchaseForm(${JSON.stringify(p).replace(/'/g,"&apos;")})'>✏️</button>
         <button class="mini-btn" title="ລຶບ" onclick="deletePurchaseAdmin('${p.ID}')">🗑️</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function receivePurchase(id){
@@ -3640,8 +3644,13 @@ function openPurchaseForm(existing){
         <select id="po_LinkedProductID">${linkOptions.join('')}</select>
       </div>
       <div class="field"><label>ຜູ້ສະໜອງ / ຮ້ານທີ່ສັ່ງ</label><input id="po_Supplier" value="${existing?existing.Supplier||'':''}"></div>
-      <div class="row2">
+      <div class="row2" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="field"><label>ຈຳນວນ (Qty)</label><input id="po_Qty" type="number" value="${existing?existing.Qty||1:1}" oninput="updatePurchaseCalcPreview()"></div>
+        <div class="field"><label>ຫົວໜ່ວຍ</label>
+          <select id="po_Unit">
+            ${['ໂຕ','ອັນ','ເຄື່ອງ','ໜ່ວຍ','ຊິ້ນ','ຄູ່','ແພັກ','ກ່ອງ'].map(u=>`<option value="${u}" ${existing&&existing.Unit===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
         <div class="field"><label>ຕົ້ນທຶນ/ໜ່ວຍ</label><input id="po_CostPrice" type="number" value="${existing?existing.CostPrice||0:0}" oninput="updatePurchaseCalcPreview()"></div>
       </div>
       <div class="row2">
@@ -3651,6 +3660,7 @@ function openPurchaseForm(existing){
       <div style="background:var(--primary-light);border-radius:14px;padding:14px 16px;margin-bottom:16px;">
         <div class="cart-summary-row"><span>ຕົ້ນທຶນລວມ (ສິນຄ້າ+ຂົນສົ່ງ)</span><b id="poCalcTotal">0 ₭</b></div>
         <div class="cart-summary-row"><span>ຕົ້ນທຶນ/ໜ່ວຍ (ລວມຂົນສົ່ງແລ້ວ)</span><b id="poCalcUnit">0 ₭</b></div>
+        <div class="cart-summary-row"><span>📈 ກຳໄລ/ໜ່ວຍ</span><b id="poCalcProfit" style="color:var(--success);">0 ₭</b></div>
         <div class="cart-summary-row total"><span>💰 ລາຄາຂາຍແນະນຳ</span><span id="poCalcSell" style="color:var(--primary-dark);">0 ₭</span></div>
       </div>
       <div class="field"><label>ລາຄາຂາຍຈິງ (ແກ້ໄຂເອງໄດ້ ຖ້າບໍ່ຢາກໃຊ້ຄ່າແນະນຳ)</label><input id="po_SellingPrice" type="number" value="${existing?existing.SellingPrice||0:0}"></div>
@@ -3668,6 +3678,7 @@ function openPurchaseForm(existing){
     const modal = document.getElementById('crudModal');
     const submitBtn = modal.querySelector('.btn-primary.btn-block');
     submitBtn.setAttribute('onclick','submitPurchaseForm()');
+    document.getElementById('po_SellingPrice').addEventListener('input', updatePurchaseCalcPreview);
     updatePurchaseCalcPreview();
   });
 }
@@ -3694,6 +3705,8 @@ function updatePurchaseCalcPreview(){
   document.getElementById('poCalcSell').textContent = fmt(calc.sellingPrice)+' ₭';
   const sellInput = document.getElementById('po_SellingPrice');
   if(sellInput && (!sellInput.value || Number(sellInput.value)===0)) sellInput.value = calc.sellingPrice;
+  const actualSell = Number(sellInput ? sellInput.value : calc.sellingPrice) || calc.sellingPrice;
+  document.getElementById('poCalcProfit').textContent = fmt(actualSell - calc.costPerUnit)+' ₭';
 }
 function submitPurchaseForm(){
   const obj = purchaseFormExisting ? Object.assign({}, purchaseFormExisting) : {};
@@ -3701,6 +3714,7 @@ function submitPurchaseForm(){
   obj.LinkedProductID = document.getElementById('po_LinkedProductID').value;
   obj.Supplier = document.getElementById('po_Supplier').value.trim();
   obj.Qty = Number(document.getElementById('po_Qty').value||0);
+  obj.Unit = document.getElementById('po_Unit').value;
   obj.CostPrice = Number(document.getElementById('po_CostPrice').value||0);
   obj.ShippingCost = Number(document.getElementById('po_ShippingCost').value||0);
   obj.ProfitPercent = Number(document.getElementById('po_ProfitPercent').value||0);
