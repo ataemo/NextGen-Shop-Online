@@ -2616,7 +2616,6 @@ function renderAdminOrders(){
     `;
     renderOrderFilterTabs();
     renderOrdersTable();
-    startOrdersAutoRefresh();
   });
 }
 
@@ -2944,7 +2943,11 @@ function printInvoiceWindow(order){
       </div>
       <div class="inv-footer">ຂອບໃຈທີ່ໃຊ້ບໍລິການ 🙏 · ${s.footerText||''}</div>
     </div>
-    <script>window.print()<\/script>
+    <script>
+      window.onload = function(){
+        setTimeout(function(){ window.print(); }, 500);
+      };
+    <\/script>
     </body></html>`);
   win.document.close();
 }
