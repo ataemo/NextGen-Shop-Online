@@ -3528,6 +3528,69 @@ const PURCHASE_STATUS_LIST = ['Ordered','Shipping','Arrived','Cancelled'];
 const PURCHASE_STATUS_LABEL = {Ordered:'ສັ່ງແລ້ວ', Shipping:'ກຳລັງຂົນສົ່ງ', Arrived:'ຮອດແລ້ວ', Cancelled:'ຍົກເລີກ'};
 const PURCHASE_STATUS_CHIP = {Ordered:'chip-pending', Shipping:'chip-shipping', Arrived:'chip-completed', Cancelled:'chip-cancelled'};
 
+let PUR_DATE_STATE = { preset:'all', from:null, to:null };
+const PUR_DATE_PRESETS = [
+  {key:'all', label:'ທັງໝົດ'},
+  {key:'today', label:'ມື້ນີ້'},
+  {key:'7days', label:'7 ວັນ'},
+  {key:'month', label:'ເດືອນນີ້'},
+  {key:'year', label:'ປີນີ້'},
+  {key:'custom', label:'ກຳນົດເອງ'}
+];
+function computePurDateRange(preset){
+  if(preset==='all') return null;
+  const now=new Date(); const y=now.getFullYear(), m=now.getMonth(), d=now.getDate();
+  let from, to;
+  if(preset==='today'){ from=new Date(y,m,d); to=new Date(y,m,d); }
+  else if(preset==='7days'){ to=new Date(y,m,d); from=new Date(y,m,d-6); }
+  else if(preset==='month'){ from=new Date(y,m,1); to=new Date(y,m,d); }
+  else if(preset==='year'){ from=new Date(y,0,1); to=new Date(y,m,d); }
+  else { from = PUR_DATE_STATE.from?new Date(PUR_DATE_STATE.from):new Date(y,m,1); to = PUR_DATE_STATE.to?new Date(PUR_DATE_STATE.to):new Date(y,m,d); }
+  return { from: toDateStr_(from), to: toDateStr_(to) };
+}
+function renderPurDateFilterBar(){
+  const el = document.getElementById('purDateFilterBar');
+  if(!el) return;
+  const range = computePurDateRange(PUR_DATE_STATE.preset);
+  el.innerHTML = PUR_DATE_PRESETS.map(p=>`<button class="dash-filter-btn ${PUR_DATE_STATE.preset===p.key?'active':''}" onclick="selectPurDatePreset('${p.key}')">${p.label}</button>`).join('')
+    + `<input type="date" class="dash-date-input" id="purFromInput" value="${(PUR_DATE_STATE.from||(range?range.from:''))}" onchange="PUR_DATE_STATE.preset='custom';PUR_DATE_STATE.from=this.value;">`
+    + `<span style="color:var(--text-muted);">→</span>`
+    + `<input type="date" class="dash-date-input" id="purToInput" value="${(PUR_DATE_STATE.to||(range?range.to:''))}" onchange="PUR_DATE_STATE.preset='custom';PUR_DATE_STATE.to=this.value;">`
+    + `<button class="btn btn-primary btn-sm" onclick="applyPurCustomRange()">🔍 ຄົ້ນຫາ</button>`
+    + `<button class="icon-btn" style="width:34px;height:34px;" onclick="PUR_DATE_STATE={preset:'all',from:null,to:null};renderPurDateFilterBar();renderPurchasesTable();">✕</button>`;
+}
+function selectPurDatePreset(key){ PUR_DATE_STATE.preset=key; renderPurDateFilterBar(); renderPurchasesTable(); }
+function applyPurCustomRange(){
+  PUR_DATE_STATE.preset='custom';
+  PUR_DATE_STATE.from = document.getElementById('purFromInput').value;
+  PUR_DATE_STATE.to = document.getElementById('purToInput').value;
+  renderPurchasesTable();
+}
+function uploadPurchaseSlip(e, purchaseId){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    adminCall('adminUploadPurchaseSlip', purchaseId, reader.result).then(res=>{
+      toast('ອັບໂຫຼດ Slip ຈັດຊື້ ສຳເລັດ');
+      const p = PURCHASES_CACHE.find(x=>x.ID===purchaseId); if(p) p.PurchaseSlipURL = res.url;
+      renderPurchasesTable();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+function uploadPurchaseShippingSlip(e, purchaseId){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    adminCall('adminUploadPurchaseShippingSlip', purchaseId, reader.result).then(res=>{
+      toast('ອັບໂຫຼດ Slip ຂົນສົ່ງ ສຳເລັດ');
+      const p = PURCHASES_CACHE.find(x=>x.ID===purchaseId); if(p) p.ShippingSlipURL = res.url;
+      renderPurchasesTable();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
 function purchaseCalc(costPrice, qty, shippingCost, profitPercent, profitAmount){
   const totalCost = (Number(costPrice||0) * Number(qty||0)) + Number(shippingCost||0);
   const costPerUnit = Number(qty||0) > 0 ? totalCost / Number(qty) : 0;
@@ -3560,12 +3623,14 @@ function renderAdminPurchases(){
           <h4 style="margin:0;">🛒 ລາຍການຈັດຊື້ (${list.length})</h4>
           <button class="btn btn-primary btn-sm" onclick="openPurchaseForm()">+ ເພີ່ມການຈັດຊື້</button>
         </div>
+        <div class="dash-filter-bar" id="purDateFilterBar" style="margin-bottom:10px;"></div>
         <div class="order-filter-tabs" id="purchaseFilterTabs"></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ຮູບ</th><th>ສິນຄ້າ</th><th>ຜູ້ສະໜອງ</th><th>ຈຳນວນ</th><th>ຕົ້ນທຶນ/ໜ່ວຍ</th><th>ຄ່າຂົນສົ່ງ</th><th>ຕົ້ນທຶນລວມ</th><th>ລາຄາຂາຍ</th><th>ກຳໄລ/ໜ່ວຍ</th><th>ວັນສັ່ງ</th><th>ຄາດວ່າຮອດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
+          <thead><tr><th>ຮູບ</th><th>ສິນຄ້າ</th><th>Slip ຈັດຊື້</th><th>Slip ຂົນສົ່ງ</th><th>ຜູ້ສະໜອງ</th><th>ຈຳນວນ</th><th>ຕົ້ນທຶນ/ໜ່ວຍ</th><th>ຄ່າຂົນສົ່ງ</th><th>ຕົ້ນທຶນລວມ</th><th>ລາຄາຂາຍ</th><th>ກຳໄລ/ໜ່ວຍ</th><th>ວັນສັ່ງ</th><th>ຄາດວ່າຮອດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
           <tbody id="purchasesTableBody"></tbody>
         </table></div>
       </div>`;
+    renderPurDateFilterBar();
     renderPurchaseFilterTabs();
     renderPurchasesTable();
   });
@@ -3586,13 +3651,25 @@ function renderPurchasesTable(){
   const body = document.getElementById('purchasesTableBody');
   if(!body) return;
   let list = PURCHASES_CACHE.filter(p=> purchaseStatusFilter==='all' || p.Status===purchaseStatusFilter);
-  if(!list.length){ body.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text-muted);">ບໍ່ພົບລາຍການ</td></tr>`; return; }
+  const range = computePurDateRange(PUR_DATE_STATE.preset);
+  if(range){
+    const from = new Date(range.from+'T00:00:00');
+    const to = new Date(range.to+'T23:59:59');
+    list = list.filter(p=>{ const d = new Date(p.Date); return d>=from && d<=to; });
+  }
+  if(!list.length){ body.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--text-muted);">ບໍ່ພົບລາຍການ</td></tr>`; return; }
   body.innerHTML = list.map(p=>{
     const profitPerUnit = Number(p.SellingPrice||0) - Number(p.CostPerUnit||0);
     return `
     <tr>
       <td><img src="${p.ImageURL||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--primary-light);"></td>
       <td>${p.ProductName}</td>
+      <td>${p.PurchaseSlipURL
+        ? `<img src="${p.PurchaseSlipURL}" onclick="viewSlip('${p.PurchaseSlipURL}')" style="width:40px;height:40px;border-radius:6px;object-fit:cover;cursor:pointer;">`
+        : `<label class="mini-btn" style="cursor:pointer;">📤<input type="file" accept="image/*" style="display:none;" onchange="uploadPurchaseSlip(event,'${p.ID}')"></label>`}</td>
+      <td>${p.ShippingSlipURL
+        ? `<img src="${p.ShippingSlipURL}" onclick="viewSlip('${p.ShippingSlipURL}')" style="width:40px;height:40px;border-radius:6px;object-fit:cover;cursor:pointer;">`
+        : `<label class="mini-btn" style="cursor:pointer;">📤<input type="file" accept="image/*" style="display:none;" onchange="uploadPurchaseShippingSlip(event,'${p.ID}')"></label>`}</td>
       <td>${p.Supplier||'-'}</td>
       <td>${p.Qty} ${p.Unit||''}</td>
       <td>${fmt(p.CostPrice)} ₭</td>
