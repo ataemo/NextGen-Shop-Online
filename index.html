@@ -2488,9 +2488,74 @@ function renderDashBody(raw, range){
       <div class="panel"><h4>ລູກຄ້າ VIP Top 5</h4>
         ${a.topCustomers.map(c=>`<div class="cart-summary-row"><span>${c.Name} (${c.Phone})</span><b>${fmt(c.TotalSpent)} ₭</b></div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
       </div>
+      <div id="dashPurchasesWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດຂໍ້ມູນຈັດຊື້...</div></div>
   `;
   drawLineChart('dailyChart', a.dailySales);
+  renderDashPurchasesOverview();
 }
+
+function renderDashPurchasesOverview(){
+  const wrap = document.getElementById('dashPurchasesWrap');
+  if(!wrap) return;
+  adminCall('adminGetPurchases').then(list=>{
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const activeList = list.filter(p=>p.Status!=='Cancelled');
+    const monthSpent = activeList.filter(p=>{ const d=new Date(p.Date); return d>=startOfMonth && d<=now; }).reduce((s,p)=>s+Number(p.TotalCost||0),0);
+    const pending = list.filter(p=>p.Status!=='Arrived' && p.Status!=='Cancelled');
+    const incomingQty = pending.reduce((s,p)=>s+Number(p.Qty||0),0);
+    const overdue = pending.filter(p=>{ if(!p.ExpectedArrival) return false; return new Date(p.ExpectedArrival) < now; });
+    const soon = pending.filter(p=>{ if(!p.ExpectedArrival) return false; const d=new Date(p.ExpectedArrival); const diff=(d-now)/86400000; return diff>=0 && diff<=3; });
+    const totalProfitPotential = list.reduce((s,p)=>{
+      const per = Number(p.SellingPrice||0)-Number(p.CostPerUnit||0);
+      return s + per*Number(p.Qty||0);
+    },0);
+
+    const supplierAgg = {};
+    activeList.forEach(p=>{
+      const key = p.Supplier || 'ບໍ່ລະບຸ';
+      supplierAgg[key] = (supplierAgg[key]||0) + Number(p.TotalCost||0);
+    });
+    const topSuppliers = Object.entries(supplierAgg).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+    const recentPending = pending.slice().sort((a,b)=> new Date(a.ExpectedArrival||'2099-01-01') - new Date(b.ExpectedArrival||'2099-01-01')).slice(0,5);
+
+    wrap.innerHTML = `
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h4 style="margin:0;">🛒 ພາບລວມການຈັດຊື້</h4>
+          <button class="btn btn-outline btn-sm" onclick="openAdminTab('purchases')">ເບິ່ງທັງໝົດ →</button>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card" style="--kpi-color:#3B82F6;--kpi-bg:#DBEAFE;"><div class="icon-badge">💰</div><div class="lbl">ຍອດຈັດຊື້ເດືອນນີ້</div><div class="val">${fmt(monthSpent)} ₭</div></div>
+          <div class="kpi-card" style="--kpi-color:#F59E0B;--kpi-bg:#FEF3C7;"><div class="icon-badge">🚚</div><div class="lbl">ອໍເດີລໍຖ້າ/ກຳລັງມາ</div><div class="val">${pending.length}</div></div>
+          <div class="kpi-card" style="--kpi-color:#10B981;--kpi-bg:#D1FAE5;"><div class="icon-badge">📦</div><div class="lbl">ຈຳນວນສິນຄ້າກຳລັງມາ</div><div class="val">${incomingQty} ອັນ</div></div>
+          <div class="kpi-card" style="--kpi-color:#EF4444;--kpi-bg:#FEE2E2;"><div class="icon-badge">⏰</div><div class="lbl">ເກີນກຳນົດຮອດແລ້ວ</div><div class="val">${overdue.length}</div></div>
+          <div class="kpi-card" style="--kpi-color:#8B5CF6;--kpi-bg:#EDE9FE;"><div class="icon-badge">📅</div><div class="lbl">ຈະຮອດພາຍໃນ 3 ວັນ</div><div class="val">${soon.length}</div></div>
+          <div class="kpi-card" style="--kpi-color:#14B8A6;--kpi-bg:#CCFBF1;"><div class="icon-badge">📈</div><div class="lbl">ກຳໄລທີ່ຄາດວ່າຈະໄດ້</div><div class="val">${fmt(totalProfitPotential)} ₭</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <h4 style="margin:0 0 10px;font-size:13px;">📋 ອໍເດີທີ່ຍັງບໍ່ຮອດ (ໃກ້ຮອດກ່ອນ)</h4>
+            ${recentPending.length ? recentPending.map(p=>{
+              const overdueThis = p.ExpectedArrival && new Date(p.ExpectedArrival) < now;
+              return `<div class="cart-summary-row" style="align-items:center;">
+                <span>${p.ProductName}<br><span style="font-size:11px;color:var(--text-muted);">${p.Supplier||'-'}</span></span>
+                <span style="text-align:right;">
+                  <span class="chip ${overdueThis?'chip-cancelled':'chip-pending'}">${p.ExpectedArrival?new Date(p.ExpectedArrival).toLocaleDateString('lo-LA'):'ບໍ່ລະບຸ'}</span>
+                </span>
+              </div>`;
+            }).join('') : '<div style="color:var(--text-muted);font-size:12px;">ບໍ່ມີອໍເດີກຳລັງມາ</div>'}
+          </div>
+          <div>
+            <h4 style="margin:0 0 10px;font-size:13px;">🏆 ຜູ້ສະໜອງອັນດັບຕົ້ນ (ຍອດຈັດຊື້ລວມ)</h4>
+            ${topSuppliers.length ? topSuppliers.map(([name,total])=>`<div class="cart-summary-row"><span>${name}</span><b>${fmt(total)} ₭</b></div>`).join('') : '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
+          </div>
+        </div>
+      </div>`;
+  }).catch(()=>{ wrap.innerHTML = ''; });
+}
+
 function renderDashFilterBar(){
   const el = document.getElementById('dashFilterBar');
   if(!el) return;
