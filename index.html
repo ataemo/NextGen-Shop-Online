@@ -2472,6 +2472,7 @@ function renderDashBody(raw, range){
         <div class="kpi-card" style="--kpi-color:#8B5CF6;--kpi-bg:#EDE9FE;"><div class="icon-badge">📦</div><div class="lbl">ສິນຄ້າ</div><div class="val">${a.total.products}</div></div>
         <div class="kpi-card" style="--kpi-color:#14B8A6;--kpi-bg:#CCFBF1;"><div class="icon-badge">⚠️</div><div class="lbl">ໃກ້ໝົດສະຕັອກ</div><div class="val">${a.total.lowStock}</div></div>
       </div>
+      <div id="dashPurchasesWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດຂໍ້ມູນຈັດຊື້...</div></div>
       <div class="panel"><h4>ຍອດຂາຍ 30 ວັນຫຼ້າສຸດ</h4><div id="dailyChart"></div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="panel"><h4>ສະຖານະອໍເດີ (ລວມທັງໝົດ)</h4>
@@ -2488,15 +2489,25 @@ function renderDashBody(raw, range){
       <div class="panel"><h4>ລູກຄ້າ VIP Top 5</h4>
         ${a.topCustomers.map(c=>`<div class="cart-summary-row"><span>${c.Name} (${c.Phone})</span><b>${fmt(c.TotalSpent)} ₭</b></div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
       </div>
-      <div id="dashPurchasesWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດຂໍ້ມູນຈັດຊື້...</div></div>
   `;
   drawLineChart('dailyChart', a.dailySales);
   renderDashPurchasesOverview();
 }
 
-function renderDashPurchasesOverview(){
+let DASH_PURCHASES_CACHE = null;   // 👈 ເພີ່ມແຖວນີ້ໄວ້ນອກຟັງຊັນ (ຢູ່ໃກ້ DASH_RAW ກໍ່ໄດ້)
+
+function renderDashPurchasesOverview(force){
   const wrap = document.getElementById('dashPurchasesWrap');
   if(!wrap) return;
+
+  // ຖ້າມີຂໍ້ມູນເກົ່າຄ້າງຢູ່ ແລະ ບໍ່ໄດ້ບັງຄັບໂຫຼດໃໝ່ → ສະແດງທັນທີ ບໍ່ກະພິບ
+  if(DASH_PURCHASES_CACHE && !force){
+    wrap.innerHTML = DASH_PURCHASES_CACHE;
+    return;
+  }
+
+  // ໂຫຼດຄັ້ງທຳອິດເທົ່ານັ້ນຈຶ່ງຈະເຫັນຄຳວ່າ "ກຳລັງໂຫຼດ..."
+  wrap.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດຂໍ້ມູນຈັດຊື້...</div>`;
   adminCall('adminGetPurchases').then(list=>{
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -2553,6 +2564,7 @@ function renderDashPurchasesOverview(){
           </div>
         </div>
       </div>`;
+    DASH_PURCHASES_CACHE = wrap.innerHTML;   // 👈 ເພີ່ມແຖວນີ້ໄວ້ທ້າຍສຸດ ເພື່ອບັນທຶກ Cache
   }).catch(()=>{ wrap.innerHTML = ''; });
 }
 
@@ -3637,6 +3649,7 @@ function uploadPurchaseSlip(e, purchaseId){
   reader.onload = ()=>{
     adminCall('adminUploadPurchaseSlip', purchaseId, reader.result).then(res=>{
       toast('ອັບໂຫຼດ Slip ຈັດຊື້ ສຳເລັດ');
+      DASH_PURCHASES_CACHE = null;   // 👈 ເພີ່ມແຖວນີ້
       const p = PURCHASES_CACHE.find(x=>x.ID===purchaseId); if(p) p.PurchaseSlipURL = res.url;
       renderPurchasesTable();
     });
@@ -3649,6 +3662,7 @@ function uploadPurchaseShippingSlip(e, purchaseId){
   reader.onload = ()=>{
     adminCall('adminUploadPurchaseShippingSlip', purchaseId, reader.result).then(res=>{
       toast('ອັບໂຫຼດ Slip ຂົນສົ່ງ ສຳເລັດ');
+      DASH_PURCHASES_CACHE = null;   // 👈 ເພີ່ມແຖວນີ້
       const p = PURCHASES_CACHE.find(x=>x.ID===purchaseId); if(p) p.ShippingSlipURL = res.url;
       renderPurchasesTable();
     });
@@ -3759,12 +3773,17 @@ function receivePurchase(id){
   adminCall('adminReceivePurchase', id).then(()=>{
     toast('ຮັບເຂົ້າສາງສຳເລັດ! ອັບເດດສະຕັອກແລ້ວ');
     ADMIN_DATA_CACHE = {};
+    DASH_PURCHASES_CACHE = null;   // 👈 ເພີ່ມແຖວນີ້
     renderAdminPurchases();
   });
 }
 function deletePurchaseAdmin(id){
   if(!confirm('ຢືນຢັນລຶບລາຍການຈັດຊື້ນີ້?')) return;
-  adminCall('adminDeletePurchase', id).then(()=>{ toast('ລຶບສຳເລັດ'); renderAdminPurchases(); });
+  adminCall('adminDeletePurchase', id).then(()=>{ 
+    toast('ລຶບສຳເລັດ'); 
+    DASH_PURCHASES_CACHE = null;   // 👈 ເພີ່ມແຖວນີ້
+    renderAdminPurchases(); 
+  });
 }
 
 let purchaseFormExisting = null;
@@ -3876,6 +3895,7 @@ function submitPurchaseForm(){
   function doSave(){
     adminCall('adminSavePurchase', obj).then(()=>{
       toast('ບັນທຶກສຳເລັດ');
+      DASH_PURCHASES_CACHE = null;   // 👈 ເພີ່ມແຖວນີ້
       document.getElementById('crudModal').classList.add('hide');
       renderAdminPurchases();
     });
