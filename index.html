@@ -606,7 +606,7 @@ a{color:inherit;text-decoration:none;}
 
 /* ---------- ADMIN LAYOUT ---------- */
 .admin-shell{display:flex;min-height:100vh;background:var(--bg);}
-.admin-side{width:230px;background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;}
+.admin-side{width:230px;background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .admin-side .brand{margin:6px 8px 20px;}
 .admin-nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:2px;}
 .admin-nav-item.active{background:var(--primary);color:#fff;}
@@ -1131,6 +1131,14 @@ let STATE = {
   adminTab: 'dashboard'
 };
 
+function toLocalDatetimeInputValue(v){
+  if(!v) return '';
+  const d = new Date(v);
+  if(isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
 function fmt(n){ return Number(n||0).toLocaleString('en-US'); }
 function toast(msg, type){
   const wrap = document.getElementById('toastWrap');
@@ -1208,14 +1216,12 @@ function refreshFlashMiniTimers(){
     const diff = end - new Date();
     el.querySelector('.fc-text').textContent = diff>0 ? fmtCountdown(diff) : 'ໝົດແລ້ວ';
   });
-  const pdEl = document.getElementById('pdFlashCountdown');
-  if(pdEl && currentProduct){
-    const end = new Date(currentProduct.FlashEnd);
-    if(!isNaN(end)){
-      const diff = end - new Date();
-      pdEl.textContent = diff>0 ? fmtCountdown(diff) : 'ໝົດແລ້ວ';
-    }
-  }
+  document.querySelectorAll('.pdFlashCountdown').forEach(el=>{
+    const end = new Date(el.dataset.flashEnd);
+    if(isNaN(end)){ el.textContent = '-'; return; }
+    const diff = end - new Date();
+    el.textContent = diff>0 ? fmtCountdown(diff) : 'ໝົດແລ້ວ';
+  });
 }
 setInterval(refreshFlashMiniTimers, 1000);
 
@@ -1569,7 +1575,7 @@ function buildProductPageHTML(p){
   const images = [p.ImageURL, ...(p.Images||'').split(',').map(s=>s.trim())].filter(Boolean);
   return `
   <div class="pd-page" data-id="${p.ID}" data-qty="1" data-color="${colors[0]||''}" data-size="${sizes[0]||''}">
-    ${flash ? `<div class="pd-flash-banner">⚡ Flash Sale ໝົດເວລາໃນ <span class="pdFlashCountdown">--:--:--</span></div>` : ''}
+    ${flash ? `<div class="pd-flash-banner">⚡ Flash Sale ໝົດເວລາໃນ <span class="pdFlashCountdown" data-flash-end="${p.FlashEnd}">--:--:--</span></div>` : ''}
     <div class="pd-imgwrap">
       ${images.length ? `<img class="mainProductImage" src="${images[0]}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:60px;">🛍️</span>`}
     </div>
@@ -3170,6 +3176,12 @@ function renderAdminProducts(){
   });
 }
 function openProductForm(existing){
+  let existingFixed = existing;
+  if(existing){
+    existingFixed = Object.assign({}, existing);
+    existingFixed.FlashStart = toLocalDatetimeInputValue(existing.FlashStart);
+    existingFixed.FlashEnd = toLocalDatetimeInputValue(existing.FlashEnd);
+  }
   adminCall('adminGetCategories').then(cats=>{
     const catOptions = cats.map(c=>c.Name);
     openCrudForm({
@@ -3199,7 +3211,7 @@ function openProductForm(existing){
         {key:'FlashStock', label:'⚡ ໂຄຕ້າ Flash Sale (ປະໄວ້ວ່າງ = ບໍ່ຈຳກັດ)', type:'number'},
         {key:'FlashSold', label:'⚡ ຂາຍໄປແລ້ວໃນຮອບນີ້ (ຕັ້ງ 0 ເມື່ອເປີດແຄມເປນໃໝ່)', type:'number'}
       ]
-    }, existing);
+    }, existingFixed);
   });
 }
 function deleteProduct(id){
