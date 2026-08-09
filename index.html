@@ -762,7 +762,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="desktop-nav" id="desktopNav">
       <button class="dn-item active" onclick="switchTab('home')"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
       <button class="dn-item" onclick="openCategoryPage('all')"><span data-icon-key="category">🗂️</span> ສິນຄ້າທັງໝົດ</button>
-      <button class="dn-item dn-item-flash" onclick="openFlashPage()"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="dn-flash-icon js-flash-nav-icon"></button>
+      <button class="dn-item dn-item-flash" onclick="openFlashPage()"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="dn-flash-icon js-flash-nav-icon" onerror="this.onerror=null;this.src='https://i.postimg.cc/59pbyFCS/FS-2.png'"></button>
       <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
@@ -790,7 +790,7 @@ table tr:hover td{background:var(--primary-light);}
 
   <div class="flash-section hide" id="flashSection">
     <div class="flash-header">
-      <div class="flash-title"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flash-title-icon js-flash-title-icon"> <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
+      <div class="flash-title"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flash-title-icon js-flash-title-icon" onerror="this.onerror=null;this.src='https://i.postimg.cc/59pbyFCS/FS-2.png'"> <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
       <div class="flash-countdown" id="flashCountdown">00:00:00</div>
     </div>
     <div class="flash-scroll" id="flashScroll"></div>
@@ -816,7 +816,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="nav-pill" id="navPill"></div>
     <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" data-tab="category" onclick="openCategoryPage('all')"><span class="ic">🗂️</span>ໝວດໝູ່</button>
-    <button class="nav-item nav-item-flash" data-tab="flash" onclick="openFlashPage()"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png" class="js-flash-nav-icon"></span></button>
+    <button class="nav-item nav-item-flash" data-tab="flash" onclick="openFlashPage()"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png" class="js-flash-nav-icon" onerror="this.onerror=null;this.src='https://i.postimg.cc/dQnw3Ty9/8.png'"></span></button>
     <button class="nav-item" data-tab="cart" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNav" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" data-tab="orders" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
@@ -858,7 +858,7 @@ table tr:hover td{background:var(--primary-light);}
      ============================================================ -->
 <div id="flashPage" class="app hide">
   <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
-    <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon js-flash-title-icon"></div>
+    <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon js-flash-title-icon" onerror="this.onerror=null;this.src='https://i.postimg.cc/59pbyFCS/FS-2.png'"></div>
     <div class="spacer"></div>
     <div class="desktop-nav flash-desktop-nav">
       <button class="dn-item" onclick="closeFlashPage()"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
@@ -877,7 +877,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="nav-pill" id="navPillFlash"></div>
     <button class="nav-item" onclick="closeFlashPage()"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" onclick="goToCategoryFromFlash()"><span class="ic">🗂️</span>ໝວດໝູ່</button>
-    <button class="nav-item nav-item-flash active"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png" class="js-flash-nav-icon"></span></button>
+    <button class="nav-item nav-item-flash active"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png" class="js-flash-nav-icon" onerror="this.onerror=null;this.src='https://i.postimg.cc/dQnw3Ty9/8.png'"></span></button>
     <button class="nav-item" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNavFlash" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
@@ -1079,7 +1079,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbw-sy893DtMZFf_L1ny65Hu
 
 async function gsRun(fnName, ...args){
   const controller = new AbortController();
-  const timeoutId = setTimeout(()=>controller.abort(), 20000); // ຢຸດອັດຕະໂນມັດຫຼັງ 20 ວິນາທີ
+  const timeoutId = setTimeout(()=>controller.abort(), 45000); // ຢຸດອັດຕະໂນມັດຫຼັງ 45 ວິນາທີ
   let res;
   try {
     res = await fetch(API_URL, {
@@ -1090,7 +1090,7 @@ async function gsRun(fnName, ...args){
     });
   } catch (networkErr) {
     if(networkErr.name === 'AbortError'){
-      throw new Error('ໝົດເວລາລໍຖ້າ Server (20 ວິນາທີ) — Server ອາດຈະຊ້າ ຫຼື ຂໍ້ມູນໃນ Sheet ໃຫຍ່ເກີນໄປ');
+      throw new Error('ໝົດເວລາລໍຖ້າ Server (45 ວິນາທີ) — Server ອາດຈະຊ້າ ຫຼື ຂໍ້ມູນໃນ Sheet ໃຫຍ່ເກີນໄປ');
     }
     throw new Error('ບໍ່ສາມາດເຊື່ອມຕໍ່ Server ໄດ້ (ກວດສອບອິນເຕີເນັດ ຫຼື API_URL): ' + networkErr.message);
   } finally {
@@ -1317,7 +1317,7 @@ function init(){
     renderFlashSection();
     renderCategories();
     renderProducts();
-    renderShippingOptions();
+    renderShipMethods();
     updateCartBadge();
   }
 
@@ -3326,14 +3326,18 @@ function renderAdminFlashSale(){
 }
 function quickCancelFlash(id){
   if(!confirm('ຢຸດແຄມເປນ Flash Sale ຂອງສິນຄ້ານີ້?')) return;
-  const p = FLASH_PRODUCTS_CACHE_FIND(id);
+  cancelFlashSale_(id);
 }
-function FLASH_PRODUCTS_CACHE_FIND(id){
+function cancelFlashSale_(id){
   adminCall('adminGetProducts').then(products=>{
     const p = products.find(x=>x.ID===id);
-    if(!p) return;
+    if(!p) return null;
     p.FlashSale = 'No';
-    adminCall('adminSaveProduct', p).then(()=>{ toast('ຢຸດແຄມເປນແລ້ວ'); renderAdminFlashSale(); });
+    return adminCall('adminSaveProduct', p);
+  }).then(result=>{
+    if(!result) return;
+    toast('ຢຸດແຄມເປນແລ້ວ');
+    renderAdminFlashSale();
   });
 }
 
