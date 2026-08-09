@@ -4024,7 +4024,7 @@ function renderAdminSettings(){
   adminCall('adminGetSettings').then(s=>{
     if(STATE.adminTab!=='settings') return; // 👈
     const basicFields = [
-      ['storeName','ຊື່ຮ້ານຄ້າ'],['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
+      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
       ['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນດ້ວຍ | )'],
       ['heroSlideSpeed','⏱️ ຄວາມໄວສະໄລ້ Banner (ວິນາທີ ເຊັ່ນ 4)'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
