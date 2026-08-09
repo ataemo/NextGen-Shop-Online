@@ -743,7 +743,7 @@ table tr:hover td{background:var(--primary-light);}
 </head>
 <body>
 
-<div id="loader" class="loader-wrap">
+<div id="loader" class="loader-wrap hide">
   <div class="brand" style="color:var(--primary);font-family:var(--font-display);font-weight:800;">🛍️ LAO SHOP</div>
   <div class="spinner"></div>
 </div>
@@ -754,7 +754,7 @@ table tr:hover td{background:var(--primary-light);}
 <!-- ============================================================
      STOREFRONT
      ============================================================ -->
-<div id="storefront" class="app hide">
+<div id="storefront" class="app">
 
   <div class="topbar">
     <div class="brand"><img id="hLogo" src="" class="hide"><span id="hName">LAO SHOP</span></div>
@@ -1607,6 +1607,7 @@ function appendNextFeedPage(){
   if(!lastPage) return;
   const list = navList();
   if(!list.length) return;
+  if(list.length <= 1) return;   // 👈 ເພີ່ມແຖວນີ້: ຖ້າມີສິນຄ້າແຄ່ 1 ລາຍການ ບໍ່ຕ້ອງຕໍ່ໜ້າ (ຈະວົນມາຊ້ຳຕົວມັນເອງ)
   const lastId = lastPage.dataset.id;
   let idx = list.indexOf(lastId);
   if(idx === -1) idx = 0;
@@ -1615,7 +1616,7 @@ function appendNextFeedPage(){
   const nextProduct = DATA.products.find(p=>p.ID===list[nextIdx]);
   if(!nextProduct) return;
   // ບໍ່ຕໍ່ຊ້ຳ ຖ້າສິນຄ້ານີ້ຖືກຕໍ່ໄວ້ແລ້ວ
-  if([...pages].some(pg=>pg.dataset.id===nextProduct.ID) && pages.length>1) return;
+  if([...pages].some(pg=>pg.dataset.id===nextProduct.ID)) return;   // 👈 ແກ້: ລຶບ `&& pages.length>1` ອອກ
   body.insertAdjacentHTML('beforeend', buildProductPageHTML(nextProduct));
 }
 
