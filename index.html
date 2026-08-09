@@ -762,7 +762,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="desktop-nav" id="desktopNav">
       <button class="dn-item active" onclick="switchTab('home')"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
       <button class="dn-item" onclick="openCategoryPage('all')"><span data-icon-key="category">🗂️</span> ສິນຄ້າທັງໝົດ</button>
-      <button class="dn-item dn-item-flash" onclick="openFlashPage()"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="dn-flash-icon"></button>
+      <button class="dn-item dn-item-flash" onclick="openFlashPage()"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="dn-flash-icon js-flash-nav-icon"></button>
       <button class="dn-item" onclick="openMyOrders()"><span data-icon-key="orders">📦</span> ຕິດຕາມອໍເດີ</button>
     </div>
     <div class="spacer"></div>
@@ -790,7 +790,7 @@ table tr:hover td{background:var(--primary-light);}
 
   <div class="flash-section hide" id="flashSection">
     <div class="flash-header">
-      <div class="flash-title"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flash-title-icon"> <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
+      <div class="flash-title"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flash-title-icon js-flash-title-icon"> <span class="see-all" onclick="openFlashPage()">ເບິ່ງທັງໝົດ ›</span></div>
       <div class="flash-countdown" id="flashCountdown">00:00:00</div>
     </div>
     <div class="flash-scroll" id="flashScroll"></div>
@@ -816,7 +816,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="nav-pill" id="navPill"></div>
     <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" data-tab="category" onclick="openCategoryPage('all')"><span class="ic">🗂️</span>ໝວດໝູ່</button>
-    <button class="nav-item nav-item-flash" data-tab="flash" onclick="openFlashPage()"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png"></span></button>
+    <button class="nav-item nav-item-flash" data-tab="flash" onclick="openFlashPage()"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png" class="js-flash-nav-icon"></span></button>
     <button class="nav-item" data-tab="cart" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNav" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" data-tab="orders" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
@@ -858,7 +858,7 @@ table tr:hover td{background:var(--primary-light);}
      ============================================================ -->
 <div id="flashPage" class="app hide">
   <div class="topbar" style="background:linear-gradient(135deg,#FF3D3D,#FF7A00);">
-    <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon"></div>
+    <div class="brand"><img src="https://i.postimg.cc/59pbyFCS/FS-2.png" class="flashpage-title-icon js-flash-title-icon"></div>
     <div class="spacer"></div>
     <div class="desktop-nav flash-desktop-nav">
       <button class="dn-item" onclick="closeFlashPage()"><span data-icon-key="home">🏠</span> ໜ້າຫຼັກ</button>
@@ -877,7 +877,7 @@ table tr:hover td{background:var(--primary-light);}
     <div class="nav-pill" id="navPillFlash"></div>
     <button class="nav-item" onclick="closeFlashPage()"><span class="ic">🏠</span>ໜ້າຫຼັກ</button>
     <button class="nav-item" onclick="goToCategoryFromFlash()"><span class="ic">🗂️</span>ໝວດໝູ່</button>
-    <button class="nav-item nav-item-flash active"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png"></span></button>
+    <button class="nav-item nav-item-flash active"><span class="ic"><img src="https://i.postimg.cc/dQnw3Ty9/8.png" class="js-flash-nav-icon"></span></button>
     <button class="nav-item" onclick="openCart()"><span class="ic">🛒<span id="cartBadgeNavFlash" class="badge hide">0</span></span>ກະຕ່າ</button>
     <button class="nav-item" onclick="openMyOrders()"><span class="ic">📦</span>ອໍເດີຂ້ອຍ</button>
   </div>
