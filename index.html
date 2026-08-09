@@ -3119,6 +3119,54 @@ function printShippingLabelWindow(order){
   win.document.close();
 }
 
+/* ---------- ອັບໂຫຼດຮູບແບບ Dropzone (ໃຊ້ຮ່ວມກັນທົ່ວລະບົບ) ---------- */
+function handleCrudImageUpload(e, key){
+  const file = e.target.files[0]; if(!file) return;
+  const dz = document.getElementById('crudDz_'+key);
+  const dzText = dz.querySelector('.dz-text');
+  dzText.textContent = '⏳ ກຳລັງອັບໂຫຼດ...';
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    adminCall('adminUploadImage', reader.result, key+'_'+Date.now()).then(res=>{
+      document.getElementById('crud_'+key).value = res.url;
+      const preview = document.getElementById('crudPreview_'+key);
+      if(preview){ preview.src = res.url; preview.classList.remove('hide'); }
+      dz.classList.add('has-file');
+      dzText.textContent = '✅ ອັບໂຫຼດສຳເລັດ (ກົດເພື່ອປ່ຽນຮູບ)';
+    }).catch(()=>{ dzText.textContent = '❌ ອັບໂຫຼດບໍ່ສຳເລັດ, ກົດເພື່ອລອງໃໝ່'; dz.classList.remove('has-file'); });
+  };
+  reader.readAsDataURL(file);
+}
+
+function imageSettingFieldHTML(key, label, value){
+  return `<div class="field"><label>${label}</label>
+    <label class="upload-dropzone" id="setDz_${key}">
+      <div class="cloud-ic">☁️</div>
+      <div class="dz-text">${value?'✅ ມີຮູບແລ້ວ (ກົດເພື່ອປ່ຽນຮູບ)':'ກົດເພື່ອເລືອກຮູບພາບ'}</div>
+      <input type="file" accept="image/*" onchange="handleSettingsImageUpload(event,'${key}')">
+    </label>
+    <img id="setPreview_${key}" src="${value||''}" class="${value?'':'hide'}" style="width:80px;margin-top:8px;border-radius:10px;">
+    <input id="set_${key}" type="text" value="${value||''}" placeholder="ຫຼື ວາງລິ້ງຮູບ URL ໂດຍກົງ" style="margin-top:8px;">
+  </div>`;
+}
+function handleSettingsImageUpload(e, key){
+  const file = e.target.files[0]; if(!file) return;
+  const dz = document.getElementById('setDz_'+key);
+  const dzText = dz.querySelector('.dz-text');
+  dzText.textContent = '⏳ ກຳລັງອັບໂຫຼດ...';
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    adminCall('adminUploadImage', reader.result, key+'_'+Date.now()).then(res=>{
+      document.getElementById('set_'+key).value = res.url;
+      const preview = document.getElementById('setPreview_'+key);
+      if(preview){ preview.src = res.url; preview.classList.remove('hide'); }
+      dz.classList.add('has-file');
+      dzText.textContent = '✅ ອັບໂຫຼດສຳເລັດ (ກົດເພື່ອປ່ຽນຮູບ)';
+    }).catch(()=>{ dzText.textContent = '❌ ອັບໂຫຼດບໍ່ສຳເລັດ, ກົດເພື່ອລອງໃໝ່'; dz.classList.remove('has-file'); });
+  };
+  reader.readAsDataURL(file);
+}
+
 /* ---------- GENERIC CRUD ENGINE (products/categories/banners/coupons/shipping) ---------- */
 let crudConfig = null;
 function openCrudForm(config, existing){
@@ -3126,6 +3174,17 @@ function openCrudForm(config, existing){
   document.getElementById('crudModalTitle').textContent = existing ? 'ແກ້ໄຂຂໍ້ມູນ' : 'ເພີ່ມຂໍ້ມູນໃໝ່';
   document.getElementById('crudFormBody').innerHTML = config.fields.map(f=>{
     const val = existing ? (existing[f.key] ?? '') : (f.default ?? '');
+    if(f.type==='image'){
+      return `<div class="field"><label>${f.label}</label>
+        <label class="upload-dropzone" id="crudDz_${f.key}">
+          <div class="cloud-ic">☁️</div>
+          <div class="dz-text">${val?'✅ ມີຮູບແລ້ວ (ກົດເພື່ອປ່ຽນຮູບ)':'ກົດເພື່ອເລືອກຮູບພາບ'}</div>
+          <input type="file" accept="image/*" onchange="handleCrudImageUpload(event,'${f.key}')">
+        </label>
+        <img id="crudPreview_${f.key}" src="${val}" class="${val?'':'hide'}" style="width:80px;margin-top:8px;border-radius:10px;">
+        <input id="crud_${f.key}" type="text" value="${val}" placeholder="ຫຼື ວາງລິ້ງຮູບ URL ໂດຍກົງ" style="margin-top:8px;">
+      </div>`;
+    }
     if(f.type==='select'){
       return `<div class="field"><label>${f.label}</label><select id="crud_${f.key}">${f.options.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
@@ -3198,7 +3257,7 @@ function openProductForm(existing){
         {key:'Discount', label:'ສ່ວນຫຼຸດ (%)', type:'number'},
         {key:'Badge', label:'Badge', type:'select', options:['','New','Hot','Sale','Best Seller','Limited']},
         {key:'Stock', label:'ຈຳນວນສະຕັອກ', type:'number'},
-        {key:'ImageURL', label:'ລິ້ງຮູບພາບ (Google Drive/URL)'},
+        {key:'ImageURL', label:'ຮູບພາບຫຼັກຂອງສິນຄ້າ', type:'image'},
         {key:'Images', label:'ຮູບເພີ່ມເຕີມ (ຂັ້ນດ້ວຍ ,)'},
         {key:'Colors', label:'ສີ (ຂັ້ນດ້ວຍ ,)'},
         {key:'Sizes', label:'ຂະໜາດ (ຂັ້ນດ້ວຍ ,)'},
@@ -3407,7 +3466,7 @@ function openCategoryForm(existing){
       {key:'ID', label:'ID', readonly:true},
       {key:'Name', label:'ຊື່ໝວດໝູ່'},
       {key:'Icon', label:'ໄອຄອນ (Emoji ເຊັ່ນ 📱)'},
-      {key:'Image', label:'ຮູບພາບ URL'},
+      {key:'Image', label:'ຮູບພາບ', type:'image'},
       {key:'SortOrder', label:'ລຳດັບສະແດງ', type:'number'},
       {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']}
     ]
@@ -3446,7 +3505,7 @@ function openBannerForm(existing){
     fields:[
       {key:'ID', label:'ID', readonly:true},
       {key:'Title', label:'ຫົວຂໍ້'},
-      {key:'ImageURL', label:'ຮູບພາບ URL (Google Drive Link)'},
+      {key:'ImageURL', label:'ຮູບພາບ Banner', type:'image'},
       {key:'Link', label:'ລິ້ງເມື່ອກົດ (ຖ້າມີ)'},
       {key:'SortOrder', label:'ລຳດັບສະແດງ', type:'number'},
       {key:'Status', label:'ສະຖານະ', type:'select', options:['Active','Hidden']}
@@ -3965,11 +4024,11 @@ function renderAdminSettings(){
   adminCall('adminGetSettings').then(s=>{
     if(STATE.adminTab!=='settings') return; // 👈
     const basicFields = [
-      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
+      ['storeName','ຊື່ຮ້ານຄ້າ'],['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
       ['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນດ້ວຍ | )'],
       ['heroSlideSpeed','⏱️ ຄວາມໄວສະໄລ້ Banner (ວິນາທີ ເຊັ່ນ 4)'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
-      ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'], ['qrImageUrl','ລິ້ງຮູບ QR'],
+      ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'],
       ['contactPhone','ເບີໂທຕິດຕໍ່'], ['whatsappNumber','ເບີ WhatsApp (ຖ້າຕ່າງຈາກເບີໂທ)'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ/username Facebook Page'],
       ['messengerUrl','ລິ້ງ/username Messenger'], ['instagramUrl','ລິ້ງ/username Instagram'], ['tiktokUrl','ລິ້ງ/username TikTok'], ['lineId','Line ID'],
       ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່'],
@@ -3988,7 +4047,9 @@ function renderAdminSettings(){
     ];
     document.getElementById('adminContent').innerHTML = `
       <div class="panel"><h4>ຂໍ້ມູນຮ້ານຄ້າ</h4>
+        ${imageSettingFieldHTML('logoUrl','ໂລໂກ້ຮ້ານ', s.logoUrl)}
         ${basicFields.map(([k,l])=>`<div class="field"><label>${l}</label><input id="set_${k}" value="${s[k]||''}"></div>`).join('')}
+        ${imageSettingFieldHTML('qrImageUrl','ຮູບ QR ຮັບເງິນ (ໂອນ/ສະແກນຈ່າຍ)', s.qrImageUrl)}
       </div>
 
       <div class="panel"><h4>🎨 ສີ ແລະ ຮູບແບບ (Theme)</h4>
@@ -4011,8 +4072,8 @@ function renderAdminSettings(){
         <div class="row2">
           ${iconFields.map(([k,l])=>`<div class="field"><label>${l}</label><input id="set_${k}" value="${s[k]||''}" style="font-size:18px;text-align:center;"></div>`).join('')}
         </div>
-        <div class="field"><label>⚡ ຮູບໄອຄອນ Flash Sale (ໂລໂກ້ໃຫຍ່)</label><input id="set_flashTitleIconUrl" value="${s.flashTitleIconUrl||''}"></div>
-        <div class="field"><label>⚡ ຮູບໄອຄອນ Flash Sale (Bottom Nav)</label><input id="set_flashNavIconUrl" value="${s.flashNavIconUrl||''}"></div>
+        ${imageSettingFieldHTML('flashTitleIconUrl','⚡ ຮູບໄອຄອນ Flash Sale (ໂລໂກ້ໃຫຍ່)', s.flashTitleIconUrl)}
+        ${imageSettingFieldHTML('flashNavIconUrl','⚡ ຮູບໄອຄອນ Flash Sale (Bottom Nav)', s.flashNavIconUrl)}
       </div>
 
       <div class="panel"><h4>📞 ໄອຄອນຊ່ອງທາງຕິດຕໍ່ (ພິມ Emoji ຫຼື ວາງລິ້ງຮູບ URL ກໍ່ໄດ້)</h4>
