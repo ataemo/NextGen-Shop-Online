@@ -4024,12 +4024,12 @@ function renderAdminSettings(){
   adminCall('adminGetSettings').then(s=>{
     if(STATE.adminTab!=='settings') return; // 👈
     const basicFields = [
-      ['storeName','ຊື່ຮ້ານຄ້າ'], ['logoUrl','ລິ້ງໂລໂກ້ (URL)'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
+      ['storeName','ຊື່ຮ້ານຄ້າ'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
       ['promoTicker','ຂໍ້ຄວາມແຖບໂປໂມຊັ່ນ (ຂັ້ນດ້ວຍ | )'],
       ['heroSlideSpeed','⏱️ ຄວາມໄວສະໄລ້ Banner (ວິນາທີ ເຊັ່ນ 4)'],
       ['currency','ຫົວໜ່ວຍເງິນ'], ['freeShippingMin','ຍອດຊື້ຟຣີຄ່າຂົນສົ່ງ'], ['defaultShippingFee','ຄ່າຂົນສົ່ງມາດຕະຖານ'],
       ['bankName','ຊື່ທະນາຄານ'], ['bankAccountName','ຊື່ບັນຊີ'], ['bankAccountNumber','ເລກບັນຊີ'],
-      ['contactPhone','ເບີໂທຕິດຕໍ່'], ['whatsappNumber','ເບີ WhatsApp (ຖ້າຕ່າງຈາກເບີໂທ)'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ/username Facebook Page'],
+      ['contactPhone','ເບີໂທຕິດຕໍ່'],['whatsappNumber','ເບີ WhatsApp (ຖ້າຕ່າງຈາກເບີໂທ)'], ['contactEmail','ອີເມວຕິດຕໍ່'], ['facebookUrl','ລິ້ງ/username Facebook Page'],
       ['messengerUrl','ລິ້ງ/username Messenger'], ['instagramUrl','ລິ້ງ/username Instagram'], ['tiktokUrl','ລິ້ງ/username TikTok'], ['lineId','Line ID'],
       ['addressText','ທີ່ຢູ່ຮ້ານ'], ['footerText','ຂໍ້ຄວາມ Footer'], ['adminNotifyEmail','ອີເມວແຈ້ງເຕືອນອໍເດີໃໝ່'],
       ['slackWebhookUrl','🔔 Slack Webhook URL']
