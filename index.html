@@ -743,6 +743,11 @@ table tr:hover td{background:var(--primary-light);}
 </head>
 <body>
 
+<div id="loader" class="loader-wrap hide">
+  <div class="brand" style="color:var(--primary);font-family:var(--font-display);font-weight:800;">🛍️ LAO SHOP</div>
+  <div class="spinner"></div>
+</div>
+
 <div id="toastWrap" class="toast-wrap"></div>
 <div id="overlay" class="overlay" onclick="closeAllOverlays()"></div>
 
@@ -1135,10 +1140,6 @@ function toLocalDatetimeInputValue(v){
 }
 
 function fmt(n){ return Number(n||0).toLocaleString('en-US'); }
-function escHtml(s){
-  // 🔒 ປ້ອງກັນ XSS: ຫຸ້ມຂໍ້ມູນທີ່ຜູ້ໃຊ້ພິມເອງ (ຊື່,ເບີໂທ,ທີ່ຢູ່,ໝາຍເຫດ...) ກ່ອນສະແດງຜົນ
-  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
 function toast(msg, type){
   const wrap = document.getElementById('toastWrap');
   const el = document.createElement('div');
@@ -1301,10 +1302,13 @@ function renderFlashPageProducts(){
 /* ============================================================
    INIT
    ============================================================ */
-init();   // ເອີ້ນທັນທີ ບໍ່ຕ້ອງລໍ window.load (ຊ້າ ເພາະລໍທຸກຮູບ/ຟອນໂຫຼດຄົບກ່ອນ)
+window.addEventListener('load', init);
 function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
   renderProvinceOptions();
+
+  document.getElementById('loader').classList.add('hide');
+  document.getElementById('storefront').classList.remove('hide');
 
   if(DATA.products && DATA.products.length){
     applySettingsToUI();
@@ -1344,11 +1348,10 @@ function loadStorefront(){
     renderProducts();
     renderShipMethods();
     updateCartBadge();
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('storefront').classList.remove('hide');
   }).catch(err=>{
-    toast('ໂຫຼດຂໍ້ມູນຮ້ານບໍ່ສຳເລັດ: '+err.message, 'error');
-    document.getElementById('productGrid').innerHTML =
-      `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">⚠️</div>ບໍ່ສາມາດໂຫຼດຂໍ້ມູນຮ້ານໄດ້<br>
-       <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="loadStorefront()">ລອງໃໝ່</button></div>`;
+    document.getElementById('loader').innerHTML = '<div style="color:var(--danger);padding:20px;text-align:center;font-size:13px;">ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດຂໍ້ມູນ:<br>'+err.message+'<br><br>ກະລຸນາກວດສອບວ່າ API_URL ຖືກຕ້ອງ ແລະ ໄດ້ Deploy Web App ແບບ "Anyone" ແລ້ວ.</div>';
   });
 }
 
@@ -1366,11 +1369,7 @@ function silentRefreshData(){
     updateCartBadge();
   }).catch(()=>{ /* ຖ້າຜິດພາດຊົ່ວຄາວ ບໍ່ຕ້ອງລົບກວນຜູ້ໃຊ້ */ });
 }
-setInterval(()=>{
-  if(document.getElementById('adminShell').classList.contains('hide')){
-    silentRefreshData();
-  }
-}, 15000);
+setInterval(silentRefreshData, 15000);
 
 const GOOGLE_FONT_MAP = {
   poppins:  { css:"'Poppins','Noto Sans Lao',sans-serif",  gf:'Poppins:wght@400;500;600;700;800' },
@@ -2012,7 +2011,7 @@ function renderSuccessModal(o){
   const dateStr = new Date(o.date).toLocaleString('lo-LA', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const itemsHTML = o.items.map(i=>`
     <div class="success-item-row">
-      <span>${escHtml(i.name)}${[i.color,i.size].filter(Boolean).length ? ' ('+escHtml([i.color,i.size].filter(Boolean).join('/'))+')' : ''} ×${i.qty}</span>
+      <span>${i.name}${[i.color,i.size].filter(Boolean).length ? ' ('+[i.color,i.size].filter(Boolean).join('/')+')' : ''} ×${i.qty}</span>
       <b>${fmt(i.price*i.qty)} ₭</b>
     </div>`).join('');
   const addressFull = [o.address, o.village, o.district, o.province].filter(Boolean).join(', ');
@@ -2041,12 +2040,12 @@ function renderSuccessModal(o){
       </div>
 
       <div class="success-section-title">📋 ຂໍ້ມູນສັ່ງຊື້</div>
-      <div class="success-info-row"><span class="lbl">👤 ຊື່</span><span class="val">${escHtml(o.customerName)}</span></div>
-      <div class="success-info-row"><span class="lbl">📱 ເບີໂທ</span><span class="val">${escHtml(o.phone)}</span></div>
-      <div class="success-info-row"><span class="lbl">📍 ທີ່ຢູ່</span><span class="val">${escHtml(addressFull||'-')}</span></div>
-      <div class="success-info-row"><span class="lbl">🚚 ຂົນສົ່ງ</span><span class="val">${escHtml(o.shippingCompany||'-')}</span></div>
+      <div class="success-info-row"><span class="lbl">👤 ຊື່</span><span class="val">${o.customerName}</span></div>
+      <div class="success-info-row"><span class="lbl">📱 ເບີໂທ</span><span class="val">${o.phone}</span></div>
+      <div class="success-info-row"><span class="lbl">📍 ທີ່ຢູ່</span><span class="val">${addressFull||'-'}</span></div>
+      <div class="success-info-row"><span class="lbl">🚚 ຂົນສົ່ງ</span><span class="val">${o.shippingCompany||'-'}</span></div>
       <div class="success-info-row"><span class="lbl">💳 ຊຳລະ</span><span class="val">${o.paymentMethod==='Transfer'?'ໂອນຜ່ານທະນາຄານ/QR':'ເກັບເງິນປາຍທາງ (COD)'}</span></div>
-      ${o.note?`<div class="success-info-row"><span class="lbl">📝 ໝາຍເຫດ</span><span class="val">${escHtml(o.note)}</span></div>`:''}
+      ${o.note?`<div class="success-info-row"><span class="lbl">📝 ໝາຍເຫດ</span><span class="val">${o.note}</span></div>`:''}
 
       <div class="success-warn-box">
         📸 <b>ກະລຸນາບັນທຶກໜ້າຈໍນີ້ໄວ້!</b><br>
@@ -2158,15 +2157,15 @@ function openPublicOrderDetail(orderId){
     <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
     ${renderOrderStepper(o.Status)}
     <h4 style="margin:14px 0 8px;">ລາຍການສິນຄ້າ</h4>
-    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${escHtml(i.ProductName)} ${escHtml([i.Color,i.Size].filter(Boolean).join('/'))} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('') || '<div style="font-size:12px;color:var(--text-muted);">-</div>'}
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('') || '<div style="font-size:12px;color:var(--text-muted);">-</div>'}
     <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
     <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
     <div class="cart-summary-row"><span>ສ່ວນຫຼຸດ</span><span>-${fmt(o.Discount)} ₭</span></div>
     <div class="cart-summary-row total"><span>ຍອດລວມ</span><span>${fmt(o.Total)} ₭</span></div>
     <h4 style="margin:14px 0 8px;">ຈັດສົ່ງ</h4>
-    <div class="cart-summary-row"><span>ບໍລິສັດຂົນສົ່ງ</span><span>${escHtml(o.ShippingCompany||'-')}</span></div>
-    <div class="cart-summary-row"><span>Tracking</span><span>${escHtml(o.TrackingNumber||'-')}</span></div>
-    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${escHtml([o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', '))}</span></div>
+    <div class="cart-summary-row"><span>ບໍລິສັດຂົນສົ່ງ</span><span>${o.ShippingCompany||'-'}</span></div>
+    <div class="cart-summary-row"><span>Tracking</span><span>${o.TrackingNumber||'-'}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', ')}</span></div>
     ${o.ShippingBin?`<div style="margin-top:8px;"><img src="${o.ShippingBin}" onclick="viewImageLightbox('${o.ShippingBin}')" style="width:110px;border-radius:10px;cursor:pointer;"></div>`:''}
   `;
   document.getElementById('publicOrderDetailModal').classList.remove('hide');
@@ -2661,18 +2660,9 @@ const ORDER_FILTERS = [
 ];
 
 function renderAdminOrders(){
-  const alreadyRendered = document.getElementById('ordersTableBody');
-  const prevSearch = alreadyRendered ? (document.getElementById('orderSearchInput').value || '') : '';
   adminCall('adminGetOrders').then(orders=>{
     if(STATE.adminTab!=='orders') return; // 👈
     ORDERS_CACHE = orders;
-    if(alreadyRendered){
-      renderOrderFilterTabs();
-      renderOrdersTable();
-      const si = document.getElementById('orderSearchInput');
-      if(si) si.value = prevSearch;
-      return;
-    }
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div class="field" style="margin-bottom:12px;"><input id="orderSearchInput" placeholder="🔍 ຄົ້ນຫາ ເລກອໍເດີ / ຊື່ / ເບີໂທ..." oninput="renderOrdersTable()"></div>
@@ -2745,7 +2735,7 @@ function renderOrdersTable(){
   body.innerHTML = list.map(o=>`
     <tr>
       <td><a href="javascript:void(0)" onclick="openOrderDetail('${o.OrderID}')" style="color:var(--primary);font-weight:700;">${o.OrderID}</a><br><span style="font-size:11px;color:var(--text-muted);">${(o.Items||[]).length} ລາຍການ</span></td>
-      <td>${escHtml(o.CustomerName)}<br><span style="font-size:11px;color:var(--text-muted);">${escHtml(o.Phone)}</span></td>
+      <td>${o.CustomerName}<br><span style="font-size:11px;color:var(--text-muted);">${o.Phone}</span></td>
       <td style="font-weight:700;color:var(--primary);">${fmt(o.Total)} ₭</td>
       <td>${o.SlipURL ? `<img src="${o.SlipURL}" onclick="viewSlip('${o.SlipURL}')" onerror="this.outerHTML='<span style=\\'color:var(--danger);font-size:10px;\\'>ຮູບເປີດບໍ່ໄດ້</span>'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;cursor:pointer;">` : `<span style="color:var(--text-muted);font-size:11px;">ບໍ່ມີ</span>`}</td>
       <td>${o.ShippingBin ? `<img src="${o.ShippingBin}" onclick="viewSlip('${o.ShippingBin}')" onerror="this.outerHTML='<span style=\\'color:var(--danger);font-size:10px;\\'>ຮູບເປີດບໍ່ໄດ້</span>'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;cursor:pointer;">` : `<span style="color:var(--text-muted);font-size:11px;">ບໍ່ມີ</span>`}</td>
@@ -2777,12 +2767,12 @@ function openOrderDetail(orderId){
   document.getElementById('orderDetailBody').innerHTML = `
     <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b style="color:var(--primary);">${o.OrderID}</b></div>
     <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
-    <div class="cart-summary-row"><span>ຊື່ລູກຄ້າ</span><span>${escHtml(o.CustomerName)}</span></div>
-    <div class="cart-summary-row"><span>ເບີໂທ</span><span>${escHtml(o.Phone)}</span></div>
-    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${escHtml([o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', '))}</span></div>
+    <div class="cart-summary-row"><span>ຊື່ລູກຄ້າ</span><span>${o.CustomerName}</span></div>
+    <div class="cart-summary-row"><span>ເບີໂທ</span><span>${o.Phone}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', ')}</span></div>
     <div class="cart-summary-row"><span>ສະຖານະ</span><span class="chip chip-${(o.Status||'').toLowerCase()}">${o.Status}</span></div>
     <h4 style="margin:16px 0 8px;">ລາຍການສິນຄ້າ</h4>
-    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${escHtml(i.ProductName)} ${escHtml([i.Color,i.Size].filter(Boolean).join('/'))} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
     <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
     <div class="cart-summary-row total"><span>ຍອດລວມ</span><span>${fmt(o.Total)} ₭</span></div>
 
@@ -2869,16 +2859,22 @@ function stopGlobalOrderWatcher(){
 }
 function checkNewOrders(){
   if(!STATE.adminToken) return;
-  gsRun('adminGetOrderCount', STATE.adminToken).then(res=>{
-    updateOrdersBadge(res.pending);
-    const totalOrders = res.count;
-    // Refresh ສະເພາະຕອນມີອໍເດີໃໝ່ເຂົ້າມາແທ້ໆ ເທົ່ານັ້ນ (ບໍ່ refresh ຊ້ຳໆເປົ່າໆ)
+  gsRun('adminGetDashboardRaw', STATE.adminToken).then(raw=>{
+    updateOrdersBadge(raw.statusCounts.pending);
+    const totalOrders = raw.orders.length;
     if(lastKnownOrderCount && totalOrders > lastKnownOrderCount){
       playNotifySound();
       toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+(totalOrders-lastKnownOrderCount)+' ລາຍການ)','success');
+      // ລ້າງ Cache ທັງໝົດ ແລ້ວອັບເດດແທັບທີ່ກຳລັງເປີດຢູ່ ແບບບໍ່ຕິດໜ້າໂຫຼດ
       ADMIN_DATA_CACHE = {};
       DASH_RAW = null;
       silentRefreshCurrentAdminTab();
+    } else if(lastKnownOrderCount){
+      // ຈຳນວນອໍເດີບໍ່ປ່ຽນ ແຕ່ອາດມີການແກ້ໄຂ (ສະຖານະ/Slip ຯລຯ) → ອັບເດດແທັບ orders/dashboard ເບົາໆ
+      if(STATE.adminTab==='orders' || STATE.adminTab==='dashboard'){
+        ADMIN_DATA_CACHE = {}; DASH_RAW = null;
+        silentRefreshCurrentAdminTab();
+      }
     }
     lastKnownOrderCount = totalOrders;
     localStorage.setItem('lao_last_order_count', totalOrders);
@@ -2935,10 +2931,10 @@ function openPrintPreview(orderId){
     <hr style="border:none;border-top:1px solid var(--border);">
     <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b>${o.OrderID}</b></div>
     <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
-    <div class="cart-summary-row"><span>ລູກຄ້າ</span><span>${escHtml(o.CustomerName)} | ${escHtml(o.Phone)}</span></div>
-    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${escHtml([o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', '))}</span></div>
+    <div class="cart-summary-row"><span>ລູກຄ້າ</span><span>${o.CustomerName} | ${o.Phone}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[o.Address,o.Village,o.District,o.Province].filter(Boolean).join(', ')}</span></div>
     <hr style="border:none;border-top:1px solid var(--border);">
-    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${escHtml(i.ProductName)} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
     <hr style="border:none;border-top:1px solid var(--border);">
     <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
     <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
@@ -2968,13 +2964,13 @@ function openShippingLabelPreview(orderId){
     </div>
     <hr style="border:none;border-top:1px solid var(--border);">
     <div class="cart-summary-row"><span>ບໍລິສັດຂົນສົ່ງ</span><b>${o.ShippingCompany||'-'}</b></div>
-    <div class="cart-summary-row"><span>ສາຂາ/ຈຸດຮັບ</span><b>${escHtml(branch)}</b></div>
+    <div class="cart-summary-row"><span>ສາຂາ/ຈຸດຮັບ</span><b>${branch}</b></div>
     <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b>${o.OrderID}</b></div>
     <hr style="border:none;border-top:1px solid var(--border);">
-    <div class="cart-summary-row"><span>ຜູ້ຮັບ</span><span>${escHtml(o.CustomerName)} | ${escHtml(o.Phone)}</span></div>
-    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${escHtml(fullAddress)}</span></div>
+    <div class="cart-summary-row"><span>ຜູ້ຮັບ</span><span>${o.CustomerName} | ${o.Phone}</span></div>
+    <div class="cart-summary-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${fullAddress}</span></div>
     <hr style="border:none;border-top:1px solid var(--border);">
-    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${escHtml(i.ProductName)} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
+    ${(o.Items||[]).map(i=>`<div class="cart-summary-row"><span>${i.ProductName} ×${i.Qty}</span><b>${fmt(i.LineTotal)} ₭</b></div>`).join('')}
     <hr style="border:none;border-top:1px solid var(--border);">
     <div class="cart-summary-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(o.Subtotal)} ₭</span></div>
     <div class="cart-summary-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(o.ShippingFee)} ₭</span></div>
@@ -3022,11 +3018,11 @@ function printInvoiceWindow(order){
       <hr class="inv-divider">
       <div class="inv-row"><span>ເລກທີໃບສັ່ງຊື້</span><b>${order.OrderID}</b></div>
       <div class="inv-row"><span>ວັນທີ</span><span>${new Date(order.Date).toLocaleString('lo-LA')}</span></div>
-      <div class="inv-row"><span>ລູກຄ້າ</span><span>${escHtml(order.CustomerName)} · ${escHtml(order.Phone)}</span></div>
-      <div class="inv-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${escHtml([order.Address,order.Village,order.District,order.Province].filter(Boolean).join(', '))}</span></div>
+      <div class="inv-row"><span>ລູກຄ້າ</span><span>${order.CustomerName} · ${order.Phone}</span></div>
+      <div class="inv-row"><span>ທີ່ຢູ່</span><span style="text-align:right;max-width:60%;">${[order.Address,order.Village,order.District,order.Province].filter(Boolean).join(', ')}</span></div>
       <table>
         <thead><tr><th>ສິນຄ້າ</th><th>ຈຳນວນ</th><th class="right">ລາຄາ</th><th class="right">ລວມ</th></tr></thead>
-        <tbody>${items.map(i=>`<tr><td>${escHtml(i.ProductName)} ${escHtml([i.Color,i.Size].filter(Boolean).join('/'))}</td><td>${i.Qty}</td><td class="right">${fmt(i.Price)}</td><td class="right">${fmt(i.LineTotal)}</td></tr>`).join('')}</tbody>
+        <tbody>${items.map(i=>`<tr><td>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')}</td><td>${i.Qty}</td><td class="right">${fmt(i.Price)}</td><td class="right">${fmt(i.LineTotal)}</td></tr>`).join('')}</tbody>
       </table>
       <div class="inv-row" style="margin-top:10px;"><span>ລວມຍ່ອຍ</span><span>${fmt(order.Subtotal)} ₭</span></div>
       <div class="inv-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(order.ShippingFee)} ₭</span></div>
@@ -3101,7 +3097,7 @@ function printShippingLabelWindow(order){
       <div class="ship-parties">
         <div class="party">ຜູ້ຝາກ<br><b>${s.storeName||'LAO SHOP'}</b><br>${s.contactPhone||''}</div>
         <div class="arrow">→</div>
-        <div class="party" style="text-align:right;">ຜູ້ຮັບ<br><b>${escHtml(order.CustomerName)}</b><br>${escHtml(order.Phone)}</div>
+        <div class="party" style="text-align:right;">ຜູ້ຮັບ<br><b>${order.CustomerName}</b><br>${order.Phone}</div>
       </div>
       <div class="logo-wrap">
         ${s.logoUrl?`<img src="${s.logoUrl}">`:''}
@@ -3112,7 +3108,7 @@ function printShippingLabelWindow(order){
       <div style="padding:0 16px 12px;">
         <table>
           <thead><tr><th>ສິນຄ້າ</th><th>ຈຳນວນ</th><th class="right">ລາຄາ</th></tr></thead>
-          <tbody>${items.map(i=>`<tr><td>${escHtml(i.ProductName)} ${escHtml([i.Color,i.Size].filter(Boolean).join('/'))}</td><td>${i.Qty}</td><td class="right">${fmt(i.LineTotal)} ₭</td></tr>`).join('')}</tbody>
+          <tbody>${items.map(i=>`<tr><td>${i.ProductName} ${[i.Color,i.Size].filter(Boolean).join('/')}</td><td>${i.Qty}</td><td class="right">${fmt(i.LineTotal)} ₭</td></tr>`).join('')}</tbody>
         </table>
         <div class="orderid-row"><span>ຄ່າສິນຄ້າ</span><span>${fmt(order.Subtotal)} ₭</span></div>
         <div class="orderid-row"><span>ຄ່າຂົນສົ່ງ</span><span>${fmt(order.ShippingFee)} ₭</span></div>
