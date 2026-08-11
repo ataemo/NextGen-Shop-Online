@@ -677,6 +677,15 @@ table tr:hover td{background:var(--primary-light);}
 .skeleton{background:var(--primary-light);border-radius:var(--radius-md);animation:skeletonPulse 1.4s ease-in-out infinite;}
 .skeleton-cat{width:76px;height:76px;border-radius:22px;}
 .skeleton-card{aspect-ratio:4/5;}
+.donut-chart-wrap{ display:flex; flex-wrap:wrap; gap:24px; align-items:center; }
+.donut-chart{ position:relative; width:200px; height:200px; border-radius:50%; flex-shrink:0; }
+.donut-chart::after{ content:''; position:absolute; inset:22px; border-radius:50%; background:var(--surface); }
+.donut-center{ position:absolute; inset:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2; text-align:center; }
+.donut-center .val{ font-size:16px; font-weight:800; color:var(--text); }
+.donut-center .lbl{ font-size:10px; color:var(--text-muted); }
+.donut-legend{ flex:1; min-width:220px; display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.donut-legend .li{ display:flex; align-items:center; gap:6px; font-size:12px; }
+.donut-legend .dot{ width:10px;height:10px;border-radius:50%; flex-shrink:0; }
 
 /* ---------- SUCCESS RECEIPT MODAL ---------- */
 .success-header{
@@ -2336,13 +2345,13 @@ function openAdminTab(tab){
   document.getElementById('adminPageTitle').textContent = (ADMIN_MENU.find(m=>m.id===tab)||{}).label || tab;
   const content = document.getElementById('adminContent');
 
-  // 👇 ຖ້າມີ Cache ຂອງແທັບນີ້ຢູ່ແລ້ວ → ສະແດງທັນທີ ບໍ່ຕິດໜ້າໂຫຼດ
   const cached = adminTabCache[tab];
   if(cached){
     content.innerHTML = cached;
-  } else {
-    content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
+    return;   // 👈 ເພີ່ມແຖວນີ້: ມີ Cache ແລ້ວ → ສະແດງທັນທີ ບໍ່ຕ້ອງດຶງຂໍ້ມູນຊ້ຳ = ບໍ່ Reload
   }
+
+  content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
 
   const renderers = {
     dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
@@ -2356,17 +2365,13 @@ function openAdminTab(tab){
 
   try {
     Promise.resolve((renderers[tab]||function(){})())
-      .then(()=>{ scheduleAdminCacheSave(tab); }) // 👈 ບັນທຶກ Cache ໄວ້ໃຊ້ຄັ້ງຕໍ່ໄປ
+      .then(()=>{ scheduleAdminCacheSave(tab); })
       .catch(err=>{
         if(STATE.adminTab !== tab) return;
-        if(!cached){
-          content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger);">
-            ⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ: ${err && err.message ? err.message : 'Unknown error'}
-            <br><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button>
-          </div>`;
-        } else {
-          toast('ອັບເດດຂໍ້ມູນບໍ່ສຳເລັດ: '+(err&&err.message?err.message:''),'error');
-        }
+        content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger);">
+          ⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ: ${err && err.message ? err.message : 'Unknown error'}
+          <br><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button>
+        </div>`;
       });
   } catch(e){}
 }
@@ -2378,12 +2383,16 @@ function adminCall(fn, ...args){
   }
   return gsRun(fn, STATE.adminToken, ...args).then(data=>{
     if(isGetter){ ADMIN_DATA_CACHE[fn] = data; }
-    else { ADMIN_DATA_CACHE = {}; } // ບັນທຶກ/ລຶບ/ແກ້ໄຂ → ລ້າງ Cache ທັງໝົດ ເພື່ອໃຫ້ຂໍ້ມູນໃໝ່ສະເໝີ
+    else {
+      ADMIN_DATA_CACHE = {};
+      delete adminTabCache[STATE.adminTab];   // 👈 ເພີ່ມແຖວນີ້: ລ້າງ Cache HTML ຂອງແທັບປັດຈຸບັນເທົ່ານັ້ນ
+      try{ localStorage.setItem('lao_admin_tab_cache', JSON.stringify(adminTabCache)); }catch(e){}
+    }
     return data;
   }).catch(err=>{
     if(String(err.message).includes('SESSION_EXPIRED')){ toast('ໝົດເວລາເຂົ້າສູ່ລະບົບ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່','error'); doAdminLogout(); }
     else toast(err.message,'error');
-    throw err;   // ← ອັນນີ້ຕ້ອງມີຢູ່ແລ້ວ (ມີແລ້ວໃນໂຄ້ດເດີມ, ບໍ່ຕ້ອງແກ້)
+    throw err;
   });
 }
 
@@ -2445,6 +2454,7 @@ function computeDashFromRaw(raw, fromStr, toStr){
     total:{ products: raw.totalProducts, lowStock: raw.lowStockCount },
     statusCounts: raw.statusCounts,
     topProducts: raw.topProducts, topCustomers: raw.topCustomers,
+    categorySales: raw.categorySales || [],   // 👈 ເພີ່ມແຖວນີ້
     dailySales
   };
 }
@@ -2493,11 +2503,24 @@ function renderDashBody(raw, range){
           ${a.topProducts.map(p=>`<div class="cart-summary-row"><span>${p.name}</span><b>${p.qty}</b></div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
         </div>
       </div>
+      
+      <div class="panel">
+        <h4>🍩 ໝວດສິນຄ້າຂາຍດີ (ຕາມຍອດຂາຍ)</h4>
+        <div id="categoryDonut"></div>
+      </div>
+      <div class="panel">
+        <h4>🏆 ລາຍງານສິນຄ້າຂາຍດີ (Top 8)</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>ສິນຄ້າ</th><th>ຈຳນວນຂາຍ</th><th>ຍອດຂາຍລວມ</th></tr></thead>
+          <tbody>${a.topProducts.map((p,i)=>`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.qty}</td><td>${fmt(p.revenue||0)} ₭</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">ຍັງບໍ່ມີຂໍ້ມູນ</td></tr>'}</tbody>
+        </table></div>
+      </div>
       <div class="panel"><h4>ລູກຄ້າ VIP Top 5</h4>
         ${a.topCustomers.map(c=>`<div class="cart-summary-row"><span>${c.Name} (${c.Phone})</span><b>${fmt(c.TotalSpent)} ₭</b></div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;">ຍັງບໍ່ມີຂໍ້ມູນ</div>'}
       </div>
   `;
   drawLineChart('dailyChart', a.dailySales);
+  renderCategoryDonut('categoryDonut', a.categorySales);   // 👈 ເພີ່ມແຖວນີ້
   renderDashPurchasesOverview();
 }
 
@@ -2643,6 +2666,28 @@ function drawLineChart(containerId, data){
     ${xLabelsHTML}
   </svg>`;
   document.getElementById(containerId).innerHTML = svg;
+}
+const DONUT_COLORS = ['#146356','#D4A657','#3B82F6','#EF4444','#10B981','#8B5CF6','#F59E0B','#14B8A6','#EC4899','#6366F1'];
+function renderCategoryDonut(containerId, data){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!data || !data.length){ el.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="ic">📊</div>ຍັງບໍ່ມີຂໍ້ມູນຍອດຂາຍ</div>`; return; }
+  const total = data.reduce((s,d)=>s+d.revenue,0) || 1;
+  let acc = 0;
+  const stops = data.map((d,i)=>{
+    const pct = d.revenue/total*100;
+    const start = acc; acc += pct;
+    return `${DONUT_COLORS[i%DONUT_COLORS.length]} ${start}% ${acc}%`;
+  }).join(', ');
+  el.innerHTML = `
+    <div class="donut-chart-wrap">
+      <div class="donut-chart" style="background:conic-gradient(${stops});">
+        <div class="donut-center"><div class="val">${fmt(total)}</div><div class="lbl">₭ ຍອດຂາຍລວມ</div></div>
+      </div>
+      <div class="donut-legend">
+        ${data.map((d,i)=>`<div class="li"><span class="dot" style="background:${DONUT_COLORS[i%DONUT_COLORS.length]}"></span>${d.name} (${Math.round(d.revenue/total*100)}%)</div>`).join('')}
+      </div>
+    </div>`;
 }
 
 /* ---------- ORDERS ---------- */
@@ -2865,17 +2910,14 @@ function checkNewOrders(){
     if(lastKnownOrderCount && totalOrders > lastKnownOrderCount){
       playNotifySound();
       toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+(totalOrders-lastKnownOrderCount)+' ລາຍການ)','success');
-      // ລ້າງ Cache ທັງໝົດ ແລ້ວອັບເດດແທັບທີ່ກຳລັງເປີດຢູ່ ແບບບໍ່ຕິດໜ້າໂຫຼດ
       ADMIN_DATA_CACHE = {};
       DASH_RAW = null;
+      DASH_PURCHASES_CACHE = null;
+      adminTabCache = {};   // 👈 ລ້າງ Cache HTML ທຸກແທັບ ເພາະມີອໍເດີໃໝ່
+      try{ localStorage.setItem('lao_admin_tab_cache', JSON.stringify(adminTabCache)); }catch(e){}
       silentRefreshCurrentAdminTab();
-    } else if(lastKnownOrderCount){
-      // ຈຳນວນອໍເດີບໍ່ປ່ຽນ ແຕ່ອາດມີການແກ້ໄຂ (ສະຖານະ/Slip ຯລຯ) → ອັບເດດແທັບ orders/dashboard ເບົາໆ
-      if(STATE.adminTab==='orders' || STATE.adminTab==='dashboard'){
-        ADMIN_DATA_CACHE = {}; DASH_RAW = null;
-        silentRefreshCurrentAdminTab();
-      }
     }
+    // 👆 ລຶບ else-if ອອກ (ອັນເກົ່າ) — ບໍ່ໃຫ້ Refresh ຊ້ຳໆທຸກ 15 ວິນາທີ ຖ້າບໍ່ມີການປ່ຽນແປງ
     lastKnownOrderCount = totalOrders;
     localStorage.setItem('lao_last_order_count', totalOrders);
   }).catch(()=>{});
@@ -3446,7 +3488,7 @@ function saveFeaturedSettings(){
 /* ---------- CATEGORIES ---------- */
 function renderAdminCategories(){
   adminCall('adminGetCategories').then(cats=>{
-    if(STATE.adminTab!=='categories') return; // 👈
+    if(STATE.adminTab!=='categories') return;
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
@@ -3454,12 +3496,16 @@ function renderAdminCategories(){
           <button class="btn btn-primary btn-sm" onclick="openCategoryForm()">+ ເພີ່ມໝວດ</button>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ໄອຄອນ</th><th>ຊື່</th><th>ລຳດັບ</th><th>ສະຖານະ</th><th></th></tr></thead>
+          <thead><tr><th>ໄອຄອນ</th><th>ຮູບພາບ</th><th>ຊື່</th><th>ລຳດັບ</th><th>ສະຖານະ</th><th></th></tr></thead>
           <tbody>${cats.map(c=>`
-            <tr><td style="font-size:20px;">${c.Icon||''}</td><td>${c.Name}</td><td>${c.SortOrder||0}</td>
-            <td><span class="chip ${c.Status==='Hidden'?'chip-cancelled':'chip-completed'}">${c.Status||'Active'}</span></td>
-            <td><button class="mini-btn" onclick='openCategoryForm(${JSON.stringify(c).replace(/'/g,"&apos;")})'>✏️</button>
-                <button class="mini-btn" onclick="deleteCategory('${c.ID}')">🗑️</button></td></tr>`).join('')}
+            <tr>
+              <td style="font-size:20px;">${c.Icon||''}</td>
+              <td>${c.Image ? `<img src="${c.Image}" onclick="viewImageLightbox('${c.Image}')" style="width:48px;height:48px;border-radius:10px;object-fit:cover;cursor:pointer;">` : `<span style="color:var(--text-muted);font-size:11px;">ບໍ່ມີຮູບ</span>`}</td>
+              <td>${c.Name}</td><td>${c.SortOrder||0}</td>
+              <td><span class="chip ${c.Status==='Hidden'?'chip-cancelled':'chip-completed'}">${c.Status||'Active'}</span></td>
+              <td><button class="mini-btn" onclick='openCategoryForm(${JSON.stringify(c).replace(/'/g,"&apos;")})'>✏️</button>
+                  <button class="mini-btn" onclick="deleteCategory('${c.ID}')">🗑️</button></td>
+            </tr>`).join('')}
           </tbody></table></div>
       </div>`;
   });
