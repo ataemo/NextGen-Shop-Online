@@ -641,16 +641,6 @@ a{color:inherit;text-decoration:none;}
 .kpi-card{position:relative;}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:var(--radius-md) var(--radius-md) 0 0;background:var(--kpi-color,var(--primary));}
 .kpi-card .icon-badge{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--kpi-bg,var(--primary-light));margin-bottom:10px;}
-@media(max-width:899px){
-  .kpi-grid{
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap:10px;
-  }
-  .kpi-card{padding:12px;}
-  .kpi-card .val{font-size:17px;}
-  .kpi-card .lbl{font-size:11px;}
-  .kpi-card .icon-badge{width:32px;height:32px;font-size:15px;margin-bottom:6px;}
-}
 .dash-filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 .dash-filter-btn{padding:9px 16px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;}
 .dash-filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
@@ -1356,14 +1346,6 @@ function loadStorefront(){
     updateCartBadge();
   }).catch(err=>{
     toast('ໂຫຼດຂໍ້ມູນຮ້ານບໍ່ສຳເລັດ: '+err.message, 'error');
-    // 👈 ເພີ່ມ: ອັບເດດ Hero ໃຫ້ເຫັນ Error ຄ້າງໄວ້ ແທນທີ່ຈະຄ້າງ "ກຳລັງໂຫຼດ..." ຕະຫຼອດໄປ
-    document.getElementById('heroTrack').innerHTML =
-      `<div class="hero-slide" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;">
-        <div style="font-size:30px;">⚠️</div>
-        <div style="color:#fff;font-family:var(--font-display);font-weight:700;font-size:13px;">ເຊື່ອມຕໍ່ Server ບໍ່ໄດ້</div>
-        <div style="color:#fff;font-size:11px;opacity:.85;max-width:280px;">${err.message}</div>
-        <button class="btn btn-sm" style="background:#fff;color:var(--primary);font-weight:700;" onclick="loadStorefront()">🔄 ລອງໃໝ່</button>
-      </div>`;
     document.getElementById('productGrid').innerHTML =
       `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">⚠️</div>ບໍ່ສາມາດໂຫຼດຂໍ້ມູນຮ້ານໄດ້<br>
        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="loadStorefront()">ລອງໃໝ່</button></div>`;
@@ -2312,13 +2294,7 @@ function enterAdmin(){
   document.getElementById('adminUserLabel').textContent = STATE.adminUser + ' ('+STATE.adminRole+')';
   renderAdminNav();
   openAdminTab('dashboard');
-  startGlobalOrderWatcher();
-  prefetchAdminData();   // 👈 ເພີ່ມແຖວນີ້
-}
-function prefetchAdminData(){
-  ['adminGetOrders','adminGetProducts','adminGetCategories','adminGetBanners',
-   'adminGetCoupons','adminGetCustomers','adminGetShipping','adminGetPurchases']
-  .forEach(fn=>{ adminCall(fn).catch(()=>{}); });
+  startGlobalOrderWatcher();   // 👈 ເພີ່ມແຖວນີ້
 }
 function renderAdminNav(){
   const menu = ADMIN_MENU.filter(m=>m.roles.includes(STATE.adminRole));
@@ -2366,7 +2342,7 @@ function openAdminTab(tab){
   if(cached){
     content.innerHTML = cached;
   } else {
-    content.innerHTML = adminSkeletonHTML();
+    content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
   }
 
   const renderers = {
@@ -2700,11 +2676,6 @@ function renderAdminOrders(){
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div class="field" style="margin-bottom:12px;"><input id="orderSearchInput" placeholder="🔍 ຄົ້ນຫາ ເລກອໍເດີ / ຊື່ / ເບີໂທ..." oninput="renderOrdersTable()"></div>
-        <div id="newOrderBanner" class="hide" onclick="applyNewOrdersRefresh()"
-             style="cursor:pointer;background:var(--primary);color:#fff;text-align:center;
-                    padding:10px;border-radius:12px;font-size:13px;font-weight:700;margin-bottom:10px;">
-          🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ — ກົດເພື່ອອັບເດດລາຍການ
-        </div>
         <div class="order-filter-tabs" id="orderFilterTabs"></div>
         <div class="table-wrap"><table>
           <thead><tr><th>ລະອຽດ</th><th>ລູກຄ້າ</th><th>ຍອດ</th><th>SLIP</th><th>Shipping Bin</th><th>ສະຖານະ</th><th>ວັນທີ</th><th>ຈັດການ</th></tr></thead>
@@ -2901,19 +2872,13 @@ function checkNewOrders(){
   gsRun('adminGetOrderCount', STATE.adminToken).then(res=>{
     updateOrdersBadge(res.pending);
     const totalOrders = res.count;
+    // Refresh ສະເພາະຕອນມີອໍເດີໃໝ່ເຂົ້າມາແທ້ໆ ເທົ່ານັ້ນ (ບໍ່ refresh ຊ້ຳໆເປົ່າໆ)
     if(lastKnownOrderCount && totalOrders > lastKnownOrderCount){
       playNotifySound();
-      const diff = totalOrders - lastKnownOrderCount;
-      toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+diff+' ລາຍການ)','success');
+      toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+(totalOrders-lastKnownOrderCount)+' ລາຍການ)','success');
       ADMIN_DATA_CACHE = {};
       DASH_RAW = null;
-      if(STATE.adminTab === 'orders'){
-        // 👈 ຢູ່ໜ້າອໍເດີ້ຢູ່ແລ້ວ → ບໍ່ດັນລາຍການ, ພຽງສະແດງແຖບແຈ້ງເຕືອນໃຫ້ກົດເອງ
-        const banner = document.getElementById('newOrderBanner');
-        if(banner) banner.classList.remove('hide');
-      } else {
-        silentRefreshCurrentAdminTab();
-      }
+      silentRefreshCurrentAdminTab();
     }
     lastKnownOrderCount = totalOrders;
     localStorage.setItem('lao_last_order_count', totalOrders);
@@ -4155,20 +4120,6 @@ function saveAllSettings(){
     toast('ບັນທຶກສຳເລັດ! ກຳລັງໂຫຼດຄືນ...');
     gsRun('getInitData').then(d=>{ DATA=d; applySettingsToUI(); });
   });
-}
-function adminSkeletonHTML(){
-  const row = `<div class="skeleton" style="height:44px;border-radius:10px;margin-bottom:8px;"></div>`;
-  return `<div class="panel">
-    <div class="skeleton" style="height:22px;width:160px;border-radius:8px;margin-bottom:16px;"></div>
-    ${row.repeat(6)}
-  </div>`;
-}
-function applyNewOrdersRefresh(){
-  ADMIN_DATA_CACHE = {};
-  const banner = document.getElementById('newOrderBanner');
-  if(banner) banner.classList.add('hide');
-  renderAdminOrders();
-  window.scrollTo({top:0, behavior:'smooth'});
 }
 </script>
 <script>
