@@ -1345,9 +1345,16 @@ function loadStorefront(){
     renderShipMethods();
     updateCartBadge();
   }).catch(err=>{
+    console.error('[LAO SHOP] getInitData error:', err);   // 👈 ເປີດ F12 > Console ເບິ່ງລາຍລະອຽດຕົວຈິງ
     toast('ໂຫຼດຂໍ້ມູນຮ້ານບໍ່ສຳເລັດ: '+err.message, 'error');
+    document.getElementById('heroTrack').innerHTML =
+      `<div class="hero-slide" style="display:flex;align-items:center;justify-content:center;">
+        <div style="color:#fff;text-align:center;">⚠️ ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ<br>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="loadStorefront()">ລອງໃໝ່</button>
+        </div></div>`;
+    document.getElementById('catScroll').innerHTML = '';
     document.getElementById('productGrid').innerHTML =
-      `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">⚠️</div>ບໍ່ສາມາດໂຫຼດຂໍ້ມູນຮ້ານໄດ້<br>
+      `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">⚠️</div>ບໍ່ສາມາດໂຫຼດຂໍ້ມູນຮ້ານໄດ້: ${escHtml(err.message)}<br>
        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="loadStorefront()">ລອງໃໝ່</button></div>`;
   });
 }
@@ -2229,6 +2236,7 @@ function closeAdminLogin(){ document.getElementById('adminLoginModal').classList
 function doAdminLogin(){
   const p = document.getElementById('loginPass').value;
   if(!p){ document.getElementById('loginError').textContent = 'ກະລຸນາໃສ່ລະຫັດຜ່ານ'; return; }
+  document.getElementById('loginError').textContent = 'ກຳລັງກວດສອບ...';
   gsRun('adminLoginByPassword', p).then(res=>{
     if(!res.success){ document.getElementById('loginError').textContent = res.message; return; }
     STATE.adminToken = res.token; STATE.adminRole = res.role; STATE.adminUser = res.fullName;
@@ -2239,6 +2247,9 @@ function doAdminLogin(){
     document.getElementById('loginError').textContent = '';
     closeAdminLogin();
     enterAdmin();
+  }).catch(err=>{
+    console.error('[LAO SHOP] adminLoginByPassword error:', err);
+    document.getElementById('loginError').textContent = '⚠️ ເຊື່ອມຕໍ່ Server ບໍ່ໄດ້: ' + err.message;
   });
 }
 function doAdminLogout(){
