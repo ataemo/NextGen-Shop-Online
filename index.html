@@ -1356,6 +1356,14 @@ function loadStorefront(){
     updateCartBadge();
   }).catch(err=>{
     toast('ໂຫຼດຂໍ້ມູນຮ້ານບໍ່ສຳເລັດ: '+err.message, 'error');
+    // 👈 ເພີ່ມ: ອັບເດດ Hero ໃຫ້ເຫັນ Error ຄ້າງໄວ້ ແທນທີ່ຈະຄ້າງ "ກຳລັງໂຫຼດ..." ຕະຫຼອດໄປ
+    document.getElementById('heroTrack').innerHTML =
+      `<div class="hero-slide" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;">
+        <div style="font-size:30px;">⚠️</div>
+        <div style="color:#fff;font-family:var(--font-display);font-weight:700;font-size:13px;">ເຊື່ອມຕໍ່ Server ບໍ່ໄດ້</div>
+        <div style="color:#fff;font-size:11px;opacity:.85;max-width:280px;">${err.message}</div>
+        <button class="btn btn-sm" style="background:#fff;color:var(--primary);font-weight:700;" onclick="loadStorefront()">🔄 ລອງໃໝ່</button>
+      </div>`;
     document.getElementById('productGrid').innerHTML =
       `<div class="empty-state" style="grid-column:1/-1;"><div class="ic">⚠️</div>ບໍ່ສາມາດໂຫຼດຂໍ້ມູນຮ້ານໄດ້<br>
        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="loadStorefront()">ລອງໃໝ່</button></div>`;
