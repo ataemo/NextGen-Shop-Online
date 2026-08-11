@@ -696,6 +696,41 @@ table tr:hover td{background:var(--primary-light);}
 .filter-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
 .filter-tab .cnt{opacity:.75;font-weight:500;margin-left:2px;}
 .chip-select{padding:6px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-weight:700;color:var(--text);}
+.mini-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+  margin-right:4px;transition:background .15s, transform .15s;
+  color:var(--text);
+}
+.mini-btn svg{width:16px;height:16px;stroke:currentColor;}
+.mini-btn:hover{ background:var(--primary-light); color:var(--primary-dark); }
+.mini-btn:active{ transform:scale(.9); }
+.mini-btn.danger:hover{ background:#FBDCDC; color:var(--danger); }
+
+.bulk-bar{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--primary-light);border-radius:12px;margin-bottom:12px;
+  flex-wrap:wrap;
+}
+.bulk-bar b{color:var(--primary-dark);}
+.row-checkbox, .select-all-checkbox{width:16px;height:16px;cursor:pointer;}
+
+.pagination-bar{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:16px;flex-wrap:wrap;
+}
+.page-btn{
+  min-width:34px;height:34px;padding:0 10px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg);font-size:13px;font-weight:700;
+}
+.page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.page-btn:disabled{opacity:.4;pointer-events:none;}
+
+.spinner-sm{
+  display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;
+}
 .tag-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .svg-chart{width:100%;height:auto;display:block;}
 @keyframes skeletonPulse{0%,100%{opacity:.5;}50%{opacity:.9;}}
@@ -1176,6 +1211,13 @@ function toLocalDatetimeInputValue(v){
 }
 
 function fmt(n){ return Number(n||0).toLocaleString('en-US'); }
+const ICONS = {
+  eye: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  printer: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`,
+  tag: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  restore: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-9.36L1 10"/></svg>`
+};
 function toast(msg, type){
   const wrap = document.getElementById('toastWrap');
   const el = document.createElement('div');
@@ -2374,8 +2416,18 @@ function openAdminTab(tab){
 
   const cached = adminTabCache[tab];
   if(cached){
-    content.innerHTML = cached;
-    return;   // 👈 ເພີ່ມແຖວນີ້: ມີ Cache ແລ້ວ → ສະແດງທັນທີ ບໍ່ຕ້ອງດຶງຂໍ້ມູນຊ້ຳ = ບໍ່ Reload
+    content.innerHTML = cached; // ສະແດງທັນທີ ໃຫ້ຮູ້ສຶກໄວ
+    const renderers = {
+      dashboard: renderAdminDashboard, orders: renderAdminOrders, products: renderAdminProducts,
+      flashsale: renderAdminFlashSale, featured: renderAdminFeatured,
+      categories: renderAdminCategories, banners: renderAdminBanners, promotion: renderAdminCoupons,
+      customers: renderAdminCustomers, shipping: renderAdminShipping, expenses: renderAdminExpenses,
+      analytics: renderAdminAnalytics, users: renderAdminUsers, settings: renderAdminSettings,
+      purchases: renderAdminPurchases
+    };
+    const fn = renderers[tab];
+    if(fn) Promise.resolve(fn()); // ດຶງຂໍ້ມູນສົດຄືນມາໃນພື້ນຫຼັງ ໂດຍບໍ່ໃຫ້ໜ້າຈໍກະພິບ
+    return;
   }
 
   content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted);">ກຳລັງໂຫຼດ... <br><small>ຖ້າຄ້າງເກີນ 10 ວິນາທີ ໃຫ້ກົດປຸ່ມລຸ່ມ</small><br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="openAdminTab('${tab}')">ລອງໃໝ່</button></div>`;
@@ -2720,6 +2772,7 @@ function renderCategoryDonut(containerId, data){
 /* ---------- ORDERS ---------- */
 const STATUS_LIST = ['Pending','Paid','Preparing','Packing','Shipping','Delivered','Completed','Cancelled'];
 let ORDERS_CACHE = [];
+let ORDERS_TOTAL = 0;
 let orderStatusFilter = 'all';
 let ordersAutoRefreshTimer = null;
 let printOrderCache = null;
@@ -2731,18 +2784,29 @@ const ORDER_FILTERS = [
   {key:'Completed', label:'ສຳເລັດ'}, {key:'Cancelled', label:'ຍົກເລີກ'}
 ];
 
+let ordersCurrentPage = 1;
+const ORDERS_PAGE_SIZE = 30;
+
 function renderAdminOrders(){
-  adminCall('adminGetOrders').then(orders=>{
-    if(STATE.adminTab!=='orders') return; // 👈
-    ORDERS_CACHE = orders;
+  return adminCall('adminGetOrders', ordersCurrentPage, ORDERS_PAGE_SIZE, false).then(res=>{
+    if(STATE.adminTab!=='orders') return;
+    ORDERS_CACHE = res.orders;
+    ORDERS_TOTAL = res.total;
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
-        <div class="field" style="margin-bottom:12px;"><input id="orderSearchInput" placeholder="🔍 ຄົ້ນຫາ ເລກອໍເດີ / ຊື່ / ເບີໂທ..." oninput="renderOrdersTable()"></div>
+        <div class="field" style="margin-bottom:12px;"><input id="orderSearchInput" placeholder="🔍 ຄົ້ນຫາ ເລກອໍເດີ / ຊື່ / ເບີໂທ..." oninput="searchOrdersAllPages()"></div>
         <div class="order-filter-tabs" id="orderFilterTabs"></div>
+        <div id="bulkBarWrap"></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ລະອຽດ</th><th>ລູກຄ້າ</th><th>ຍອດ</th><th>SLIP</th><th>Shipping Bin</th><th>ສະຖານະ</th><th>ວັນທີ</th><th>ຈັດການ</th></tr></thead>
+          <thead><tr>
+            <th><input type="checkbox" id="selectAllOrders" class="select-all-checkbox" onchange="toggleSelectAllOrders(this)"></th>
+            <th>ລະອຽດ</th><th>ລູກຄ້າ</th><th>ຍອດ</th><th>SLIP</th><th>Shipping Bin</th><th>ສະຖານະ</th><th>ວັນທີ</th><th>ຈັດການ</th></tr></thead>
           <tbody id="ordersTableBody"></tbody>
         </table></div>
+        <div class="pagination-bar" id="ordersPaginationBar"></div>
+        <div style="text-align:center;margin-top:10px;">
+          <button class="btn btn-outline btn-sm" onclick="openTrashBin()">🗑️ ຖັງຂີ້ເຫຍື້ອ</button>
+        </div>
       </div>
 
       <div class="modal-center-wrap hide" id="orderDetailModal">
@@ -2775,9 +2839,60 @@ function renderAdminOrders(){
           <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="doPrintShippingLabel()">🖨️ ພິມບິນຈັດສົ່ງ</button>
         </div>
       </div>
+
+      <div class="modal-center-wrap hide" id="trashBinModal">
+        <div class="modal-center" style="max-width:600px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;font-family:var(--font-display);">🗑️ ຖັງຂີ້ເຫຍື້ອ (ອໍເດີ)</h3>
+            <button class="close-x" onclick="closeTrashBin()">✕</button>
+          </div>
+          <div id="trashBinBody"><div style="text-align:center;padding:20px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>
+        </div>
+      </div>
     `;
     renderOrderFilterTabs();
     renderOrdersTable();
+    renderOrdersPagination();
+  });
+}
+
+function renderOrdersPagination(){
+  const totalPages = Math.max(1, Math.ceil(ORDERS_TOTAL / ORDERS_PAGE_SIZE));
+  const bar = document.getElementById('ordersPaginationBar');
+  if(!bar) return;
+  if(orderStatusFilter!=='all' || (document.getElementById('orderSearchInput')||{}).value){ bar.innerHTML=''; return; } // ຄົ້ນຫາ/ກັ່ນຕອງ = ໃຊ້ຂໍ້ມູນ Client-side, ບໍ່ page
+  let html = `<button class="page-btn" ${orderesCurrentPageDisabled('prev')} onclick="gotoOrdersPage(${ordersCurrentPage-1})">‹</button>`;
+  for(let i=1;i<=totalPages;i++){
+    if(i===1 || i===totalPages || Math.abs(i-ordersCurrentPage)<=1){
+      html += `<button class="page-btn ${i===ordersCurrentPage?'active':''}" onclick="gotoOrdersPage(${i})">${i}</button>`;
+    } else if(Math.abs(i-ordersCurrentPage)===2){ html += `<span style="color:var(--text-muted);">...</span>`; }
+  }
+  html += `<button class="page-btn" ${orderesCurrentPageDisabled('next',totalPages)} onclick="gotoOrdersPage(${ordersCurrentPage+1})">›</button>`;
+  html += `<span style="font-size:12px;color:var(--text-muted);margin-left:8px;">ທັງໝົດ ${ORDERS_TOTAL} ລາຍການ</span>`;
+  bar.innerHTML = html;
+}
+function orderesCurrentPageDisabled(dir, totalPages){
+  if(dir==='prev') return ordersCurrentPage<=1 ? 'disabled' : '';
+  return ordersCurrentPage>=totalPages ? 'disabled' : '';
+}
+function gotoOrdersPage(p){
+  const totalPages = Math.max(1, Math.ceil(ORDERS_TOTAL / ORDERS_PAGE_SIZE));
+  if(p<1 || p>totalPages) return;
+  ordersCurrentPage = p;
+  adminCall('adminGetOrders', ordersCurrentPage, ORDERS_PAGE_SIZE, false).then(res=>{
+    ORDERS_CACHE = res.orders; ORDERS_TOTAL = res.total;
+    renderOrdersTable(); renderOrdersPagination();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+}
+// ຄົ້ນຫາຂ້າມທຸກໜ້າ: ດຶງທັງໝົດມາຄົ້ນຫາຝັ່ງ Client ຊົ່ວຄາວ
+function searchOrdersAllPages(){
+  const kw = document.getElementById('orderSearchInput').value.trim();
+  if(!kw){ gotoOrdersPage(ordersCurrentPage); return; }
+  adminCall('adminGetOrders', 1, 99999, false).then(res=>{
+    ORDERS_CACHE = res.orders;
+    renderOrdersTable();
+    document.getElementById('ordersPaginationBar').innerHTML='';
   });
 }
 
@@ -2790,6 +2905,52 @@ function renderOrderFilterTabs(){
   }).join('');
 }
 function setOrderFilter(key){ orderStatusFilter = key; renderOrderFilterTabs(); renderOrdersTable(); }
+function onOrderCheckChange(){
+  const checked = [...document.querySelectorAll('.row-checkbox:checked')].map(c=>c.value);
+  const wrap = document.getElementById('bulkBarWrap');
+  if(!checked.length){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = `
+    <div class="bulk-bar">
+      <b>ເລືອກແລ້ວ ${checked.length} ລາຍການ</b>
+      <select id="bulkStatusSelect" class="chip-select">
+        ${STATUS_LIST.map(s=>`<option value="${s}">${STATUS_ICONS[s]||''} ${s}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="bulkUpdateStatus()">✅ ອັບເດດສະຖານະ</button>
+      <button class="btn btn-danger btn-sm" onclick="bulkDeleteOrders()">🗑️ ຍ້າຍໄປຖັງຂີ້ເຫຍື້ອ</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearOrderSelection()">✕ ຍົກເລີກ</button>
+    </div>`;
+}
+function toggleSelectAllOrders(cb){
+  document.querySelectorAll('.row-checkbox').forEach(c=>c.checked = cb.checked);
+  onOrderCheckChange();
+}
+function clearOrderSelection(){
+  document.querySelectorAll('.row-checkbox').forEach(c=>c.checked=false);
+  document.getElementById('selectAllOrders').checked=false;
+  onOrderCheckChange();
+}
+function bulkUpdateStatus(){
+  const checked = [...document.querySelectorAll('.row-checkbox:checked')].map(c=>c.value);
+  const status = document.getElementById('bulkStatusSelect').value;
+  if(!checked.length) return;
+  adminCall('adminBulkUpdateOrderStatus', checked, status).then(()=>{
+    toast('ອັບເດດ '+checked.length+' ອໍເດີ ສຳເລັດ');
+    checked.forEach(id=>{ const o=ORDERS_CACHE.find(x=>x.OrderID===id); if(o) o.Status=status; });
+    renderOrderFilterTabs(); renderOrdersTable();
+  });
+}
+function bulkDeleteOrders(){
+  const checked = [...document.querySelectorAll('.row-checkbox:checked')].map(c=>c.value);
+  if(!checked.length) return;
+  if(!confirm('ຍ້າຍ '+checked.length+' ອໍເດີ ໄປຖັງຂີ້ເຫຍື້ອ?')) return;
+  const btns = document.querySelectorAll('.bulk-bar .btn');
+  btns.forEach(b=>b.disabled=true);
+  Promise.all(checked.map(id=>adminCall('adminDeleteOrder', id))).then(()=>{
+    toast('ຍ້າຍໄປຖັງຂີ້ເຫຍື້ອແລ້ວ');
+    ORDERS_CACHE = ORDERS_CACHE.filter(o=>!checked.includes(o.OrderID));
+    renderOrderFilterTabs(); renderOrdersTable();
+  }).finally(()=>{ btns.forEach(b=>b.disabled=false); });
+}
 
 function renderOrdersTable(){
   const searchEl = document.getElementById('orderSearchInput');
@@ -2806,6 +2967,7 @@ function renderOrdersTable(){
 
   body.innerHTML = list.map(o=>`
     <tr>
+      <td><input type="checkbox" class="row-checkbox" value="${o.OrderID}" onchange="onOrderCheckChange()"></td>
       <td><a href="javascript:void(0)" onclick="openOrderDetail('${o.OrderID}')" style="color:var(--primary);font-weight:700;">${o.OrderID}</a><br><span style="font-size:11px;color:var(--text-muted);">${(o.Items||[]).length} ລາຍການ</span></td>
       <td>${o.CustomerName}<br><span style="font-size:11px;color:var(--text-muted);">${o.Phone}</span></td>
       <td style="font-weight:700;color:var(--primary);">${fmt(o.Total)} ₭</td>
@@ -2815,16 +2977,19 @@ function renderOrdersTable(){
         ${STATUS_LIST.map(s=>`<option value="${s}" ${s===o.Status?'selected':''}>${STATUS_ICONS[s]||''} ${s}</option>`).join('')}
       </select></td>
       <td style="font-size:12px;">${new Date(o.Date).toLocaleDateString('lo-LA')}</td>
-      <td>
-        <button class="mini-btn" title="ເບິ່ງລາຍລະອຽດ" onclick="openOrderDetail('${o.OrderID}')">👁️</button>
-        <button class="mini-btn" title="ພິມໃບບິນ" onclick="openPrintPreview('${o.OrderID}')">🖨️</button>
-        <button class="mini-btn" title="ພິມບິນຈັດສົ່ງ" onclick="openShippingLabelPreview('${o.OrderID}')">🏷️</button>
-        <button class="mini-btn" title="ລຶບ" onclick="deleteOrderAdmin('${o.OrderID}')">🗑️</button>
+      <td style="white-space:nowrap;">
+        <button class="mini-btn" title="ເບິ່ງລາຍລະອຽດ" onclick="openOrderDetail('${o.OrderID}')">${ICONS.eye}</button>
+        <button class="mini-btn" title="ພິມໃບບິນ" onclick="openPrintPreview('${o.OrderID}')">${ICONS.printer}</button>
+        <button class="mini-btn" title="ພິມບິນຈັດສົ່ງ" onclick="openShippingLabelPreview('${o.OrderID}')">${ICONS.tag}</button>
+        <button class="mini-btn danger" title="ຍ້າຍໄປຖັງຂີ້ເຫຍື້ອ" onclick="deleteOrderAdmin('${o.OrderID}')">${ICONS.trash}</button>
       </td>
     </tr>`).join('');
+  document.getElementById('selectAllOrders').checked = false;
+  onOrderCheckChange();
 }
 
 function quickUpdateStatus(orderId, status){
+  toast('ກຳລັງອັບເດດ...');
   adminCall('adminUpdateOrderStatus', orderId, status).then(()=>{
     toast('ອັບເດດສະຖານະສຳເລັດ');
     const o = ORDERS_CACHE.find(x=>x.OrderID===orderId); if(o) o.Status = status;
@@ -2835,7 +3000,7 @@ function quickUpdateStatus(orderId, status){
 /* ---- ລາຍລະອຽດອໍເດີ (popup) ---- */
 function openOrderDetail(orderId){
   const o = ORDERS_CACHE.find(x=>x.OrderID===orderId);
-  if(!o) return;
+  if(!o){ adminCall('adminGetOrders').then(res=>{ ORDERS_CACHE=res.orders; openOrderDetail(orderId); }); return; }
   document.getElementById('orderDetailBody').innerHTML = `
     <div class="cart-summary-row"><span>ເລກອໍເດີ</span><b style="color:var(--primary);">${o.OrderID}</b></div>
     <div class="cart-summary-row"><span>ວັນທີ</span><span>${new Date(o.Date).toLocaleString('lo-LA')}</span></div>
@@ -2893,11 +3058,43 @@ function viewSlip(url){ viewImageLightbox(url); }
 
 /* ---- ລຶບອໍເດີ ---- */
 function deleteOrderAdmin(orderId){
-  if(!confirm('ຢືນຢັນລຶບອໍເດີ '+orderId+' ນີ້? ຈະບໍ່ສາມາດກູ້ຄືນໄດ້')) return;
+  if(!confirm('ຍ້າຍອໍເດີ '+orderId+' ໄປຖັງຂີ້ເຫຍື້ອ? (ຍັງກູ້ຄືນໄດ້ພາຍຫຼັງ)')) return;
   adminCall('adminDeleteOrder', orderId).then(()=>{
-    toast('ລຶບອໍເດີແລ້ວ');
+    toast('ຍ້າຍໄປຖັງຂີ້ເຫຍື້ອແລ້ວ');
     ORDERS_CACHE = ORDERS_CACHE.filter(o=>o.OrderID!==orderId);
     renderOrderFilterTabs(); renderOrdersTable();
+  });
+}
+function openTrashBin(){
+  document.getElementById('trashBinModal').classList.remove('hide');
+  adminCall('adminGetOrders', 1, 99999, true).then(res=>{
+    const list = res.orders;
+    document.getElementById('trashBinBody').innerHTML = list.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>ອໍເດີ</th><th>ລູກຄ້າ</th><th>ຍອດ</th><th>ຈັດການ</th></tr></thead>
+        <tbody>${list.map(o=>`
+          <tr><td>${o.OrderID}</td><td>${o.CustomerName}</td><td>${fmt(o.Total)} ₭</td>
+          <td>
+            <button class="mini-btn" title="ກູ້ຄືນ" onclick="restoreOrder('${o.OrderID}')">${ICONS.restore}</button>
+            <button class="mini-btn danger" title="ລຶບຖາວອນ" onclick="permanentDeleteOrder('${o.OrderID}')">${ICONS.trash}</button>
+          </td></tr>`).join('')}
+        </tbody></table></div>
+    ` : `<div class="empty-state"><div class="ic">🗑️</div>ຖັງຂີ້ເຫຍື້ອຫວ່າງເປົ່າ</div>`;
+  });
+}
+function closeTrashBin(){ document.getElementById('trashBinModal').classList.add('hide'); }
+function restoreOrder(orderId){
+  adminCall('adminRestoreOrder', orderId).then(()=>{
+    toast('ກູ້ຄືນອໍເດີແລ້ວ');
+    openTrashBin();
+    gotoOrdersPage(ordersCurrentPage);
+  });
+}
+function permanentDeleteOrder(orderId){
+  if(!confirm('⚠️ ລຶບຖາວອນ '+orderId+' ນີ້? ຈະບໍ່ສາມາດກູ້ຄືນໄດ້ອີກ!')) return;
+  adminCall('adminPermanentDeleteOrder', orderId).then(()=>{
+    toast('ລຶບຖາວອນແລ້ວ');
+    openTrashBin();
   });
 }
 
@@ -2906,8 +3103,8 @@ function startOrdersAutoRefresh(){
   stopOrdersAutoRefresh();
   ordersAutoRefreshTimer = setInterval(()=>{
     if(STATE.adminTab !== 'orders'){ stopOrdersAutoRefresh(); return; }
-    adminCall('adminGetOrders').then(orders=>{
-      ORDERS_CACHE = orders;
+    adminCall('adminGetOrders').then(res=>{
+      ORDERS_CACHE = res.orders;
       renderOrderFilterTabs();
       renderOrdersTable();
     }).catch(()=>{});
