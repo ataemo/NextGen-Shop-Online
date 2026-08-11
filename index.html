@@ -748,6 +748,7 @@ table tr:hover td{background:var(--primary-light);}
 .donut-legend{ flex:1; min-width:220px; display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
 .donut-legend .li{ display:flex; align-items:center; gap:6px; font-size:12px; }
 .donut-legend .dot{ width:10px;height:10px;border-radius:50%; flex-shrink:0; }
+.donut-tooltip{position:fixed;display:none;background:#16211D;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;pointer-events:none;z-index:999;box-shadow:0 8px 20px rgba(0,0,0,.25);}
 
 /* ---------- SUCCESS RECEIPT MODAL ---------- */
 .success-header{
@@ -2583,9 +2584,19 @@ function renderDashBody(raw, range){
         </div>
       </div>
       
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="panel">
+          <h4>🍩 ໝວດສິນຄ້າຂາຍດີ (ຕາມຍອດຂາຍ)</h4>
+          <div id="categoryDonut"></div>
+        </div>
+        <div class="panel">
+          <h4>🍩 ສິນຄ້າຂາຍດີ (ຕາມຍອດຂາຍ)</h4>
+          <div id="productDonut"></div>
+        </div>
+      </div>
       <div class="panel">
-        <h4>🍩 ໝວດສິນຄ້າຂາຍດີ (ຕາມຍອດຂາຍ)</h4>
-        <div id="categoryDonut"></div>
+        <h4>📦 ຄຳແນະນຳສັ່ງຊື້ສິນຄ້າຄືນ (Restock)</h4>
+        <div id="restockSuggestion"><div style="text-align:center;padding:20px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</div></div>
       </div>
       <div class="panel">
         <h4>🏆 ລາຍງານສິນຄ້າຂາຍດີ (Top 8)</h4>
@@ -2599,7 +2610,9 @@ function renderDashBody(raw, range){
       </div>
   `;
   drawLineChart('dailyChart', a.dailySales);
-  renderCategoryDonut('categoryDonut', a.categorySales);   // 👈 ເພີ່ມແຖວນີ້
+  renderCategoryDonut('categoryDonut', a.categorySales);
+  renderCategoryDonut('productDonut', a.topProducts.map(p=>({name:p.name, revenue:p.revenue||0})));
+  adminCall('adminGetProducts').then(products=>{ renderRestockSuggestion(products); });
   renderDashPurchasesOverview();
 }
 
@@ -2747,26 +2760,78 @@ function drawLineChart(containerId, data){
   document.getElementById(containerId).innerHTML = svg;
 }
 const DONUT_COLORS = ['#146356','#D4A657','#3B82F6','#EF4444','#10B981','#8B5CF6','#F59E0B','#14B8A6','#EC4899','#6366F1'];
+
+function polarToXY_(cx,cy,r,deg){
+  const rad = (deg-90)*Math.PI/180;
+  return { x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad) };
+}
+function donutSlicePath_(cx,cy,rOut,rIn,startDeg,endDeg){
+  const p1 = polarToXY_(cx,cy,rOut,endDeg);
+  const p2 = polarToXY_(cx,cy,rOut,startDeg);
+  const p3 = polarToXY_(cx,cy,rIn,startDeg);
+  const p4 = polarToXY_(cx,cy,rIn,endDeg);
+  const large = (endDeg-startDeg) <= 180 ? 0 : 1;
+  return `M ${p1.x} ${p1.y} A ${rOut} ${rOut} 0 ${large} 0 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${rIn} ${rIn} 0 ${large} 1 ${p4.x} ${p4.y} Z`;
+}
 function renderCategoryDonut(containerId, data){
   const el = document.getElementById(containerId);
   if(!el) return;
   if(!data || !data.length){ el.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="ic">📊</div>ຍັງບໍ່ມີຂໍ້ມູນຍອດຂາຍ</div>`; return; }
   const total = data.reduce((s,d)=>s+d.revenue,0) || 1;
   let acc = 0;
-  const stops = data.map((d,i)=>{
+  const cx=100, cy=100, rOut=100, rIn=62;
+  const slices = data.map((d,i)=>{
     const pct = d.revenue/total*100;
-    const start = acc; acc += pct;
-    return `${DONUT_COLORS[i%DONUT_COLORS.length]} ${start}% ${acc}%`;
-  }).join(', ');
+    const startDeg = acc/100*360; acc += pct;
+    const endDeg = acc/100*360;
+    return { path:donutSlicePath_(cx,cy,rOut,rIn,startDeg,endDeg), color:DONUT_COLORS[i%DONUT_COLORS.length], name:d.name, revenue:d.revenue, pct };
+  });
   el.innerHTML = `
     <div class="donut-chart-wrap">
-      <div class="donut-chart" style="background:conic-gradient(${stops});">
+      <div style="position:relative;width:200px;height:200px;flex-shrink:0;">
+        <svg viewBox="0 0 200 200" style="width:100%;height:100%;overflow:visible;">
+          ${slices.map(s=>`<path d="${s.path}" fill="${s.color}" style="cursor:pointer;"
+            onmousemove="showDonutTip(event,'${s.name.replace(/'/g,"&apos;")}',${s.revenue},${Math.round(s.pct)})"
+            onmouseleave="hideDonutTip()"></path>`).join('')}
+        </svg>
         <div class="donut-center"><div class="val">${fmt(total)}</div><div class="lbl">₭ ຍອດຂາຍລວມ</div></div>
       </div>
       <div class="donut-legend">
-        ${data.map((d,i)=>`<div class="li"><span class="dot" style="background:${DONUT_COLORS[i%DONUT_COLORS.length]}"></span>${d.name} (${Math.round(d.revenue/total*100)}%)</div>`).join('')}
+        ${slices.map(s=>`<div class="li"><span class="dot" style="background:${s.color}"></span>${s.name} (${Math.round(s.pct)}%)</div>`).join('')}
       </div>
-    </div>`;
+    </div>
+    <div id="donutTooltip_${containerId}" class="donut-tooltip"></div>`;
+}
+function showDonutTip(e, name, revenue, pct){
+  let tip = document.querySelector('.donut-tooltip[style*="display: block"]') || document.body.querySelector('.donut-tooltip');
+  document.querySelectorAll('.donut-tooltip').forEach(t=>t.style.display='none');
+  tip = e.target.closest('.donut-chart-wrap').nextElementSibling;
+  if(!tip) return;
+  tip.innerHTML = `<b>${name}</b><br>${fmt(revenue)} ₭ (${pct}%)`;
+  tip.style.left = (e.clientX+14)+'px';
+  tip.style.top = (e.clientY-10)+'px';
+  tip.style.display = 'block';
+}
+function hideDonutTip(){ document.querySelectorAll('.donut-tooltip').forEach(t=>t.style.display='none'); }
+
+/* ---- ຕາຕະລາງແນະນຳ "ຄວນສັ່ງຊື້ຄືນ" (ປຽບທຽບ ຍອດຂາຍ vs ສະຕັອກ) ---- */
+function renderRestockSuggestion(products){
+  const el = document.getElementById('restockSuggestion');
+  if(!el) return;
+  const LOW_STOCK = 10; // 👈 ປັບຕົວເລກນີ້ໄດ້ຕາມທີ່ຕ້ອງການ (ຖືວ່າ "ໃກ້ໝົດ")
+  const list = products
+    .map(p=>({ name:p.Name, stock:Number(p.Stock||0), sold:Number(p.Sold||0) }))
+    .filter(p=> p.stock<=LOW_STOCK && p.sold>0)
+    .sort((a,b)=> b.sold-a.sold);
+  if(!list.length){ el.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="ic">✅</div>ສະຕັອກສິນຄ້າຍັງພຽງພໍ ບໍ່ຈຳເປັນຕ້ອງສັ່ງຊື້ຄືນຕອນນີ້</div>`; return; }
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>ສິນຄ້າ</th><th>ຍອດຂາຍລວມ</th><th>ຄົງເຫຼືອ</th><th>ຄວາມຈຳເປັນ</th></tr></thead>
+    <tbody>${list.map(p=>{
+      const urgent = p.stock<=3;
+      return `<tr><td>${p.name}</td><td>${p.sold}</td>
+        <td style="font-weight:700;color:${urgent?'var(--danger)':'var(--warn)'};">${p.stock}</td>
+        <td><span class="chip ${urgent?'chip-cancelled':'chip-pending'}">${urgent?'⚠️ ດ່ວນ! ໃກ້ໝົດ':'🔔 ຄວນສັ່ງເພີ່ມ'}</span></td></tr>`;
+    }).join('')}</tbody></table></div>`;
 }
 
 /* ---------- ORDERS ---------- */
