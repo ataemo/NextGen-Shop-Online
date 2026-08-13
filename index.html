@@ -740,10 +740,6 @@ table tr:hover td{background:var(--primary-light);}
 .skeleton-cat{width:76px;height:76px;border-radius:22px;}
 .skeleton-card{aspect-ratio:4/5;}
 .donut-chart-wrap{ display:flex; flex-wrap:wrap; gap:24px; align-items:center; }
-.dash-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-@media(max-width:820px){
-  .dash-two-col{ grid-template-columns:1fr; }
-}
 .donut-chart{ position:relative; width:200px; height:200px; border-radius:50%; flex-shrink:0; }
 .donut-chart::after{ content:''; position:absolute; inset:22px; border-radius:50%; background:var(--surface); }
 .donut-center{ position:absolute; inset:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2; text-align:center; }
@@ -2461,7 +2457,7 @@ function openAdminTab(tab){
 }
 let ADMIN_DATA_CACHE = {};
 function adminCall(fn, ...args){
-  const isGetter = fn.indexOf('adminGet') === 0;
+  const isGetter = fn.indexOf('adminGet') === 0 && args.length === 0;
   if(isGetter && ADMIN_DATA_CACHE[fn] !== undefined){
     return Promise.resolve(ADMIN_DATA_CACHE[fn]);
   }
@@ -2533,41 +2529,12 @@ function computeDashFromRaw(raw, fromStr, toStr){
       .reduce((s,o)=>s+o.Total,0);
     dailySales.push({ date: pad2_(d.getDate())+'/'+pad2_(d.getMonth()+1), sales:s });
   }
-  const orderIdsInRange = new Set(raw.orders.filter(o=>{
-    const d = new Date(o.Date); return d>=from && d<=to && o.Status!=='Cancelled';
-  }).map(o=>o.OrderID));
-  const itemsInRange = (raw.items||[]).filter(i=>orderIdsInRange.has(i.OrderID));
-  const catByProductId = {};
-  (raw.products||[]).forEach(p=>{ catByProductId[p.ID] = p.Category || 'ອື່ນໆ'; });
-
-  const prodAgg = {};
-  itemsInRange.forEach(i=>{
-    const key = i.ProductID+'|'+i.ProductName;
-    if(!prodAgg[key]) prodAgg[key] = {qty:0, revenue:0};
-    prodAgg[key].qty += Number(i.Qty||0);
-    prodAgg[key].revenue += Number(i.LineTotal||0);
-  });
-  const topProductsRange = Object.entries(prodAgg)
-    .map(([key,v])=>({name:key.split('|')[1], qty:v.qty, revenue:v.revenue}))
-    .sort((a,b)=>b.qty-a.qty).slice(0,8);
-
-  const catAgg = {};
-  itemsInRange.forEach(i=>{
-    const cat = catByProductId[i.ProductID] || 'ອື່ນໆ';
-    if(!catAgg[cat]) catAgg[cat] = {qty:0, revenue:0};
-    catAgg[cat].qty += Number(i.Qty||0);
-    catAgg[cat].revenue += Number(i.LineTotal||0);
-  });
-  const categorySalesRange = Object.entries(catAgg)
-    .map(([name,v])=>({name, qty:v.qty, revenue:v.revenue}))
-    .sort((a,b)=>b.revenue-a.revenue);
-
   return {
     range:{ sales, expense, profit:sales-expense, orders:ordersCount, pending },
     total:{ products: raw.totalProducts, lowStock: raw.lowStockCount },
     statusCounts: raw.statusCounts,
-    topProducts: topProductsRange, topCustomers: raw.topCustomers,
-    categorySales: categorySalesRange,
+    topProducts: raw.topProducts, topCustomers: raw.topCustomers,
+    categorySales: raw.categorySales || [],   // 👈 ເພີ່ມແຖວນີ້
     dailySales
   };
 }
@@ -2604,7 +2571,7 @@ function renderDashBody(raw, range){
       </div>
       <div id="dashPurchasesWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດຂໍ້ມູນຈັດຊື້...</div></div>
       <div class="panel"><h4>ຍອດຂາຍ 30 ວັນຫຼ້າສຸດ</h4><div id="dailyChart"></div></div>
-      <div class="dash-two-col">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="panel"><h4>ສະຖານະອໍເດີ (ລວມທັງໝົດ)</h4>
           <div class="cart-summary-row"><span>⏳ ລໍຖ້າ</span><b>${a.statusCounts.pending}</b></div>
           <div class="cart-summary-row"><span>💰 ຊຳລະແລ້ວ</span><b>${a.statusCounts.paid}</b></div>
@@ -2617,7 +2584,7 @@ function renderDashBody(raw, range){
         </div>
       </div>
       
-      <div class="dash-two-col">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="panel">
           <h4>🍩 ໝວດສິນຄ້າຂາຍດີ (ຕາມຍອດຂາຍ)</h4>
           <div id="categoryDonut"></div>
@@ -2700,7 +2667,7 @@ function renderDashPurchasesOverview(force){
           <div class="kpi-card" style="--kpi-color:#8B5CF6;--kpi-bg:#EDE9FE;"><div class="icon-badge">📅</div><div class="lbl">ຈະຮອດພາຍໃນ 3 ວັນ</div><div class="val">${soon.length}</div></div>
           <div class="kpi-card" style="--kpi-color:#14B8A6;--kpi-bg:#CCFBF1;"><div class="icon-badge">📈</div><div class="lbl">ກຳໄລທີ່ຄາດວ່າຈະໄດ້</div><div class="val">${fmt(totalProfitPotential)} ₭</div></div>
         </div>
-        <div class="dash-two-col">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div>
             <h4 style="margin:0 0 10px;font-size:13px;">📋 ອໍເດີທີ່ຍັງບໍ່ຮອດ (ໃກ້ຮອດກ່ອນ)</h4>
             ${recentPending.length ? recentPending.map(p=>{
@@ -3572,7 +3539,7 @@ function submitCrudForm(){
 
 /* ---------- PRODUCTS ---------- */
 function renderAdminProducts(){
-  return adminCall('adminGetProducts').then(products=>{
+  adminCall('adminGetProducts').then(products=>{
     if(STATE.adminTab!=='products') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -3653,7 +3620,7 @@ function toggleFeatured(id, val){
 
 /* ---------- FLASH SALE (ຈັດການແຄມເປນ) ---------- */
 function renderAdminFlashSale(){
-  return adminCall('adminGetProducts').then(products=>{
+  adminCall('adminGetProducts').then(products=>{
     if(STATE.adminTab!=='flashsale') return; // 👈
     const list = products.filter(p=>p.FlashSale==='Yes');
     document.getElementById('adminContent').innerHTML = `
@@ -3809,7 +3776,7 @@ function saveFeaturedSettings(){
 
 /* ---------- CATEGORIES ---------- */
 function renderAdminCategories(){
-  return adminCall('adminGetCategories').then(cats=>{
+  adminCall('adminGetCategories').then(cats=>{
     if(STATE.adminTab!=='categories') return;
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -3852,7 +3819,7 @@ function deleteCategory(id){
 
 /* ---------- BANNERS ---------- */
 function renderAdminBanners(){
-  return adminCall('adminGetBanners').then(banners=>{
+  adminCall('adminGetBanners').then(banners=>{
     if(STATE.adminTab!=='banners') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -3892,7 +3859,7 @@ function deleteBanner(id){
 
 /* ---------- COUPONS / PROMOTION ---------- */
 function renderAdminCoupons(){
-  return adminCall('adminGetCoupons').then(coupons=>{
+  adminCall('adminGetCoupons').then(coupons=>{
     if(STATE.adminTab!=='promotion') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -3933,7 +3900,7 @@ function deleteCoupon(code){
 
 /* ---------- CUSTOMERS ---------- */
 function renderAdminCustomers(){
-  return adminCall('adminGetCustomers').then(customers=>{
+  adminCall('adminGetCustomers').then(customers=>{
     if(STATE.adminTab!=='customers') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -3976,7 +3943,7 @@ function deleteCustomerAdmin(phone){
 
 /* ---------- SHIPPING ---------- */
 function renderAdminShipping(){
-  return adminCall('adminGetShipping').then(ships=>{
+  adminCall('adminGetShipping').then(ships=>{
     if(STATE.adminTab!=='shipping') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -4011,7 +3978,7 @@ function openShippingForm(existing){
 
 /* ---------- EXPENSES ---------- */
 function renderAdminExpenses(){
-  return adminCall('adminGetExpenses').then(expenses=>{
+  adminCall('adminGetExpenses').then(expenses=>{
     if(STATE.adminTab!=='expenses') return; // 👈
     const total = expenses.reduce((s,e)=>s+Number(e.Amount||0),0);
     document.getElementById('adminContent').innerHTML = `
@@ -4040,7 +4007,7 @@ function openExpenseForm(){
 }
 
 /* ---------- ANALYTICS (detail page) ---------- */
-function renderAdminAnalytics(){ return renderAdminDashboard(); }
+function renderAdminAnalytics(){ renderAdminDashboard(); }
 /* ---------- ຈັດຊື້ສິນຄ້າ (Purchases) ---------- */
 let PURCHASES_CACHE = [];
 let purchaseStatusFilter = 'all';
@@ -4356,7 +4323,7 @@ function submitPurchaseForm(){
 
 /* ---------- USERS / ADMINS ---------- */
 function renderAdminUsers(){
-  return adminCall('adminGetUsers').then(users=>{
+  adminCall('adminGetUsers').then(users=>{
     if(STATE.adminTab!=='users') return; // 👈
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
@@ -4394,7 +4361,7 @@ function deleteUser(username){
 
 /* ---------- SETTINGS ---------- */
 function renderAdminSettings(){
-  return adminCall('adminGetSettings').then(s=>{
+  adminCall('adminGetSettings').then(s=>{
     if(STATE.adminTab!=='settings') return; // 👈
     const basicFields = [
       ['storeName','ຊື່ຮ້ານຄ້າ'], ['bannerText','ຂໍ້ຄວາມ Banner ຫຼັກ'],
