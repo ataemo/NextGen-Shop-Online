@@ -2571,7 +2571,7 @@ function renderDashBody(raw, range){
       </div>
       <div id="dashPurchasesWrap"><div style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດຂໍ້ມູນຈັດຊື້...</div></div>
       <div class="panel"><h4>ຍອດຂາຍ 30 ວັນຫຼ້າສຸດ</h4><div id="dailyChart"></div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="dash-two-col">
         <div class="panel"><h4>ສະຖານະອໍເດີ (ລວມທັງໝົດ)</h4>
           <div class="cart-summary-row"><span>⏳ ລໍຖ້າ</span><b>${a.statusCounts.pending}</b></div>
           <div class="cart-summary-row"><span>💰 ຊຳລະແລ້ວ</span><b>${a.statusCounts.paid}</b></div>
@@ -2584,7 +2584,7 @@ function renderDashBody(raw, range){
         </div>
       </div>
       
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="dash-two-col">
         <div class="panel">
           <h4>🍩 ໝວດສິນຄ້າຂາຍດີ (ຕາມຍອດຂາຍ)</h4>
           <div id="categoryDonut"></div>
@@ -2784,15 +2784,31 @@ function renderCategoryDonut(containerId, data){
     const pct = d.revenue/total*100;
     const startDeg = acc/100*360; acc += pct;
     const endDeg = acc/100*360;
-    return { path:donutSlicePath_(cx,cy,rOut,rIn,startDeg,endDeg), color:DONUT_COLORS[i%DONUT_COLORS.length], name:d.name, revenue:d.revenue, pct };
+    return { startDeg, endDeg, color:DONUT_COLORS[i%DONUT_COLORS.length], name:d.name, revenue:d.revenue, pct };
   });
+
+  let svgInner;
+  if(slices.length === 1){
+    const s = slices[0];
+    const rMid = (rOut+rIn)/2;
+    const strokeW = rOut-rIn;
+    svgInner = `<circle cx="${cx}" cy="${cy}" r="${rMid}" fill="none" stroke="${s.color}" stroke-width="${strokeW}"
+      style="cursor:pointer;"
+      onmousemove="showDonutTip(event,'${s.name.replace(/'/g,"&apos;")}',${s.revenue},100)"
+      ontouchstart="event.preventDefault();showDonutTip(event,'${s.name.replace(/'/g,"&apos;")}',${s.revenue},100)"
+      onmouseleave="hideDonutTip()"></circle>`;
+  } else {
+    svgInner = slices.map(s=>`<path d="${donutSlicePath_(cx,cy,rOut,rIn,s.startDeg,s.endDeg)}" fill="${s.color}" style="cursor:pointer;"
+      onmousemove="showDonutTip(event,'${s.name.replace(/'/g,"&apos;")}',${s.revenue},${Math.round(s.pct)})"
+      ontouchstart="event.preventDefault();showDonutTip(event,'${s.name.replace(/'/g,"&apos;")}',${s.revenue},${Math.round(s.pct)})"
+      onmouseleave="hideDonutTip()"></path>`).join('');
+  }
+
   el.innerHTML = `
     <div class="donut-chart-wrap">
       <div style="position:relative;width:200px;height:200px;flex-shrink:0;">
         <svg viewBox="0 0 200 200" style="width:100%;height:100%;overflow:visible;">
-          ${slices.map(s=>`<path d="${s.path}" fill="${s.color}" style="cursor:pointer;"
-            onmousemove="showDonutTip(event,'${s.name.replace(/'/g,"&apos;")}',${s.revenue},${Math.round(s.pct)})"
-            onmouseleave="hideDonutTip()"></path>`).join('')}
+          ${svgInner}
         </svg>
         <div class="donut-center"><div class="val">${fmt(total)}</div><div class="lbl">₭ ຍອດຂາຍລວມ</div></div>
       </div>
@@ -2803,16 +2819,22 @@ function renderCategoryDonut(containerId, data){
     <div id="donutTooltip_${containerId}" class="donut-tooltip"></div>`;
 }
 function showDonutTip(e, name, revenue, pct){
-  let tip = document.querySelector('.donut-tooltip[style*="display: block"]') || document.body.querySelector('.donut-tooltip');
   document.querySelectorAll('.donut-tooltip').forEach(t=>t.style.display='none');
-  tip = e.target.closest('.donut-chart-wrap').nextElementSibling;
+  const tip = e.target.closest('.donut-chart-wrap').nextElementSibling;
   if(!tip) return;
+  // 👇 ຮອງຮັບທັງ mouse event (e.clientX) ແລະ touch event (e.touches[0].clientX)
+  const point = (e.touches && e.touches[0]) ? e.touches[0] : e;
   tip.innerHTML = `<b>${name}</b><br>${fmt(revenue)} ₭ (${pct}%)`;
-  tip.style.left = (e.clientX+14)+'px';
-  tip.style.top = (e.clientY-10)+'px';
+  tip.style.left = (point.clientX+14)+'px';
+  tip.style.top = (point.clientY-10)+'px';
   tip.style.display = 'block';
 }
 function hideDonutTip(){ document.querySelectorAll('.donut-tooltip').forEach(t=>t.style.display='none'); }
+
+// 👇 ເພີ່ມແຖວນີ້ຕໍ່ທ້າຍ: ແຕະບ່ອນອື່ນນອກກາຟ ໃຫ້ tooltip ຫາຍໄປ (ຮອງຮັບມືຖື)
+document.addEventListener('touchstart', (e)=>{
+  if(!e.target.closest('.donut-chart-wrap')) hideDonutTip();
+}, {passive:true});
 
 /* ---- ຕາຕະລາງແນະນຳ "ຄວນສັ່ງຊື້ຄືນ" (ປຽບທຽບ ຍອດຂາຍ vs ສະຕັອກ) ---- */
 function renderRestockSuggestion(products){
