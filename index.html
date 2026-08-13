@@ -2866,6 +2866,7 @@ function renderRestockSuggestion(products){
 const STATUS_LIST = ['Pending','Paid','Preparing','Packing','Shipping','Delivered','Completed','Cancelled'];
 let ORDERS_CACHE = [];
 let ORDERS_TOTAL = 0;
+let ordersLoadedOnce = false;   // 👈 ຈື່ວ່າໂຫຼດອໍເດີໃນເຊດຊັນນີ້ແລ້ວບໍ່
 let orderStatusFilter = 'all';
 let ordersAutoRefreshTimer = null;
 let printOrderCache = null;
@@ -2880,7 +2881,7 @@ const ORDER_FILTERS = [
 let ordersCurrentPage = 1;
 const ORDERS_PAGE_SIZE = 30;
 
-function renderAdminOrders(){
+function renderAdminOrders(forceRefresh){
   // 👇 ສ້າງໂຄງຮ່າງໜ້າພຽງເທື່ອດຽວ (ຄືກັນກັບ Dashboard) — ຄັ້ງຕໍ່ໄປຈະອັບເດດສະເພາະຕາຕະລາງ ບໍ່ລຶບໜ້າຈໍທັງໝົດ
   const alreadyRendered = document.getElementById('ordersTableBody');
   if(!alreadyRendered){
@@ -2944,10 +2945,18 @@ function renderAdminOrders(){
     `;
     renderOrderFilterTabs();
   }
+  // 👇 ຖ້າເຄີຍໂຫຼດແລ້ວ ແລະ ບໍ່ໄດ້ບັງຄັບໂຫຼດໃໝ່ → ໃຊ້ຂໍ້ມູນເກົ່າໃນໜ່ວຍຄວາມຈຳທັນທີ ບໍ່ຕ້ອງຮ້ອງ Server
+  if(ordersLoadedOnce && !forceRefresh){
+    renderOrderFilterTabs();
+    renderOrdersTable();
+    renderOrdersPagination();
+    return Promise.resolve();
+  }
   return adminCall('adminGetOrders', ordersCurrentPage, ORDERS_PAGE_SIZE, false).then(res=>{
     if(STATE.adminTab!=='orders') return;
     ORDERS_CACHE = res.orders;
     ORDERS_TOTAL = res.total;
+    ordersLoadedOnce = true;   // 👈 ໝາຍວ່າໂຫຼດແລ້ວ ຄັ້ງຕໍ່ໄປບໍ່ຕ້ອງໂຫຼດອີກ
     renderOrderFilterTabs();
     renderOrdersTable();
     renderOrdersPagination();
@@ -3232,12 +3241,17 @@ function checkNewOrders(){
     if(lastKnownOrderCount && totalOrders > lastKnownOrderCount){
       playNotifySound();
       toast('🔔 ມີອໍເດີໃໝ່ເຂົ້າມາ! ('+(totalOrders-lastKnownOrderCount)+' ລາຍການ)','success');
-      ADMIN_DATA_CACHE = {};
+      // 👇 ລ້າງ Cache ສະເພາະສ່ວນທີ່ກ່ຽວກັບອໍເດີ/ພາບລວມ ບໍ່ລ້າງທຸກແທັບ (ບໍ່ໃຫ້ໜ້າອື່ນຕ້ອງໂຫຼດຄືນ)
+      delete ADMIN_DATA_CACHE['adminGetOrders'];
       DASH_RAW = null;
       DASH_PURCHASES_CACHE = null;
-      adminTabCache = {};   // 👈 ລ້າງ Cache HTML ທຸກແທັບ ເພາະມີອໍເດີໃໝ່
+      ordersLoadedOnce = false;
+      delete adminTabCache['orders'];
+      delete adminTabCache['dashboard'];
       try{ localStorage.setItem('lao_admin_tab_cache', JSON.stringify(adminTabCache)); }catch(e){}
-      silentRefreshCurrentAdminTab();
+
+      if(STATE.adminTab==='orders') renderAdminOrders(true);       // ບັງຄັບໂຫຼດອໍເດີໃໝ່ ສະເພາະຖ້າຢູ່ໜ້ານີ້
+      else if(STATE.adminTab==='dashboard') renderAdminDashboard();
     }
     // 👆 ລຶບ else-if ອອກ (ອັນເກົ່າ) — ບໍ່ໃຫ້ Refresh ຊ້ຳໆທຸກ 15 ວິນາທີ ຖ້າບໍ່ມີການປ່ຽນແປງ
     lastKnownOrderCount = totalOrders;
