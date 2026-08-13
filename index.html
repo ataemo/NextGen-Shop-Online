@@ -1390,10 +1390,9 @@ function init(){
   document.documentElement.setAttribute('data-theme', STATE.theme);
   renderProvinceOptions();
 
-  document.getElementById('loader').classList.add('hide');
-  document.getElementById('storefront').classList.remove('hide');
-
   if(DATA.products && DATA.products.length){
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('storefront').classList.remove('hide');
     applySettingsToUI();
     renderHero();
     renderPromoTicker();
@@ -2311,6 +2310,7 @@ function closeAdminLogin(){ document.getElementById('adminLoginModal').classList
 function doAdminLogin(){
   const p = document.getElementById('loginPass').value;
   if(!p){ document.getElementById('loginError').textContent = 'ກະລຸນາໃສ່ລະຫັດຜ່ານ'; return; }
+  document.getElementById('loginError').textContent = 'ກຳລັງກວດສອບ...';
   gsRun('adminLoginByPassword', p).then(res=>{
     if(!res.success){ document.getElementById('loginError').textContent = res.message; return; }
     STATE.adminToken = res.token; STATE.adminRole = res.role; STATE.adminUser = res.fullName;
@@ -2321,6 +2321,8 @@ function doAdminLogin(){
     document.getElementById('loginError').textContent = '';
     closeAdminLogin();
     enterAdmin();
+  }).catch(err=>{
+    document.getElementById('loginError').textContent = '⚠️ ຜິດພາດ: ' + err.message;
   });
 }
 function doAdminLogout(){
