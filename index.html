@@ -2433,7 +2433,7 @@ function openAdminTab(tab){
       purchases: renderAdminPurchases
     };
     const fn = renderers[tab];
-    if(fn) Promise.resolve(fn()); // ດຶງຂໍ້ມູນສົດຄືນມາໃນພື້ນຫຼັງ ໂດຍບໍ່ໃຫ້ໜ້າຈໍກະພິບ
+    if(fn) Promise.resolve(fn()).then(()=>{ scheduleAdminCacheSave(tab); }); // 👈 ເພີ່ມ .then() ເພື່ອບັນທຶກ Cache ໃໝ່ຫຼັງໂຫຼດຂໍ້ມູນສົດ
     return;
   }
 
@@ -2881,10 +2881,9 @@ let ordersCurrentPage = 1;
 const ORDERS_PAGE_SIZE = 30;
 
 function renderAdminOrders(){
-  return adminCall('adminGetOrders', ordersCurrentPage, ORDERS_PAGE_SIZE, false).then(res=>{
-    if(STATE.adminTab!=='orders') return;
-    ORDERS_CACHE = res.orders;
-    ORDERS_TOTAL = res.total;
+  // 👇 ສ້າງໂຄງຮ່າງໜ້າພຽງເທື່ອດຽວ (ຄືກັນກັບ Dashboard) — ຄັ້ງຕໍ່ໄປຈະອັບເດດສະເພາະຕາຕະລາງ ບໍ່ລຶບໜ້າຈໍທັງໝົດ
+  const alreadyRendered = document.getElementById('ordersTableBody');
+  if(!alreadyRendered){
     document.getElementById('adminContent').innerHTML = `
       <div class="panel">
         <div class="field" style="margin-bottom:12px;"><input id="orderSearchInput" placeholder="🔍 ຄົ້ນຫາ ເລກອໍເດີ / ຊື່ / ເບີໂທ..." oninput="searchOrdersAllPages()"></div>
@@ -2894,7 +2893,7 @@ function renderAdminOrders(){
           <thead><tr>
             <th><input type="checkbox" id="selectAllOrders" class="select-all-checkbox" onchange="toggleSelectAllOrders(this)"></th>
             <th>ລະອຽດ</th><th>ລູກຄ້າ</th><th>ຍອດ</th><th>SLIP</th><th>Shipping Bin</th><th>ສະຖານະ</th><th>ວັນທີ</th><th>ຈັດການ</th></tr></thead>
-          <tbody id="ordersTableBody"></tbody>
+          <tbody id="ordersTableBody"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted);">ກຳລັງໂຫຼດ...</td></tr></tbody>
         </table></div>
         <div class="pagination-bar" id="ordersPaginationBar"></div>
         <div style="text-align:center;margin-top:10px;">
@@ -2943,6 +2942,12 @@ function renderAdminOrders(){
         </div>
       </div>
     `;
+    renderOrderFilterTabs();
+  }
+  return adminCall('adminGetOrders', ordersCurrentPage, ORDERS_PAGE_SIZE, false).then(res=>{
+    if(STATE.adminTab!=='orders') return;
+    ORDERS_CACHE = res.orders;
+    ORDERS_TOTAL = res.total;
     renderOrderFilterTabs();
     renderOrdersTable();
     renderOrdersPagination();
