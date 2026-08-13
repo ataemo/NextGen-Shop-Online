@@ -749,6 +749,12 @@ table tr:hover td{background:var(--primary-light);}
 .donut-legend .li{ display:flex; align-items:center; gap:6px; font-size:12px; }
 .donut-legend .dot{ width:10px;height:10px;border-radius:50%; flex-shrink:0; }
 .donut-tooltip{position:fixed;display:none;background:#16211D;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;pointer-events:none;z-index:999;box-shadow:0 8px 20px rgba(0,0,0,.25);}
+.dash-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:820px){
+  .dash-two-col{grid-template-columns:1fr;}
+  .donut-legend{grid-template-columns:1fr;}
+  .donut-chart-wrap{justify-content:center;}
+}
 
 /* ---------- SUCCESS RECEIPT MODAL ---------- */
 .success-header{
